@@ -2,8 +2,8 @@
   "name": "promo-bot-admin",
   "version": "1.0.0",
   "scripts": {
-    "start": "npx ng serve --port 4200 --open",
-    "build": "npx ng build"
+    "start": "node node_modules/@angular/cli/bin/ng.js serve --port 4200 --open",
+    "build": "node node_modules/@angular/cli/bin/ng.js build"
   },
   "dependencies": {
     "@angular/common": "^17.0.0",
