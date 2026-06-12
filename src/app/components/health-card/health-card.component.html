@@ -1,0 +1,63 @@
+<div class="health-card fade-in fade-in-1">
+
+  <!-- Cabeçalho do card -->
+  <div class="card-header">
+    <div class="card-title">
+      <span class="icon">⚡</span>
+      <span>Status do Bot</span>
+    </div>
+    <button class="refresh-btn" (click)="atualizar()" [disabled]="loading" title="Atualizar">
+      <span [class.spinning]="loading">↻</span>
+    </button>
+  </div>
+
+  <!-- Estado: carregando -->
+  <div *ngIf="loading && !health" class="loading-state">
+    <div class="skeleton-line wide"></div>
+    <div class="skeleton-line narrow"></div>
+    <div class="skeleton-line medium"></div>
+  </div>
+
+  <!-- Estado: dados carregados -->
+  <div *ngIf="!loading || health" class="card-body">
+
+    <!-- Badge de status principal -->
+    <div class="status-badge-wrapper">
+      <div class="status-dot-ring" [ngClass]="statusClass"></div>
+      <span class="status-label" [ngClass]="statusClass">{{ statusLabel }}</span>
+    </div>
+
+    <!-- Métricas -->
+    <div class="metrics" *ngIf="health && !erro">
+      <div class="metric">
+        <span class="metric-value">{{ health.totalProdutosEnviados ?? 0 }}</span>
+        <span class="metric-label">Produtos Enviados</span>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric" *ngIf="health.versao">
+        <span class="metric-value mono">{{ health.versao }}</span>
+        <span class="metric-label">Versão</span>
+      </div>
+      <div class="metric-divider" *ngIf="health.versao"></div>
+      <div class="metric" *ngIf="health.uptime">
+        <span class="metric-value mono">{{ health.uptime }}</span>
+        <span class="metric-label">Uptime</span>
+      </div>
+    </div>
+
+    <!-- Mensagem de erro -->
+    <div class="error-msg" *ngIf="erro">
+      <span class="error-icon">⚠</span>
+      Não foi possível conectar ao backend.<br>
+      <small>Verifique se o bot está rodando na URL configurada.</small>
+    </div>
+
+  </div>
+
+  <!-- Rodapé com timestamp -->
+  <div class="card-footer" *ngIf="ultimaAtualizacao">
+    <span class="mono">Atualizado {{ ultimaAtualizacao | date:'HH:mm:ss' }}</span>
+    <span class="auto-badge">AUTO 30s</span>
+  </div>
+
+</div>

@@ -1,0 +1,61 @@
+<div class="dashboard">
+
+  <!-- Fundo com grid decorativo -->
+  <div class="bg-grid"></div>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <span class="logo-icon">🤖</span>
+        <div class="logo-text">
+          <span class="logo-name">PromoBot</span>
+          <span class="logo-sub mono">ADMIN PANEL</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="topbar-center">
+      <div class="url-display mono">
+        <span class="url-dot"></span>
+        {{ api.baseUrl() }}
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <span class="timestamp mono">{{ agora | date:'dd/MM HH:mm' }}</span>
+      <button class="config-btn" (click)="abrirConfig()" title="Configurações">
+        ⚙️ Config
+      </button>
+    </div>
+  </header>
+
+  <!-- Conteúdo principal -->
+  <main class="main-content">
+
+    <!-- Linha superior: Status + Executar Amazon -->
+    <div class="top-row">
+      <app-health-card class="card-col" />
+      <app-executar-btn class="card-col" />
+    </div>
+
+    <!-- Linha de ações adicionais -->
+    <div class="top-row">
+      <app-buscar-categorias-btn class="card-col" />
+      <app-aliexpress-btn class="card-col" />
+    </div>
+
+    <!-- Tabela de produtos (linha completa) -->
+    <div class="full-row">
+      <app-produtos-table />
+    </div>
+
+  </main>
+
+  <!-- Modal de configurações -->
+  <app-config-modal
+    *ngIf="configAberto()"
+    (fechar)="fecharConfig()"
+  />
+
+</div>

@@ -1,0 +1,95 @@
+<div class="produtos-card fade-in fade-in-3">
+
+  <!-- Header -->
+  <div class="card-header">
+    <div class="card-title">
+      <span class="icon">📦</span>
+      <span>Produtos Enviados</span>
+      <span class="count-badge" *ngIf="!loading">{{ produtos.length }}</span>
+    </div>
+
+    <div class="header-actions">
+      <!-- Filtro de horas -->
+      <div class="horas-filter">
+        <button
+          *ngFor="let h of horasOpcoes"
+          class="hora-btn"
+          [class.active]="horas === h"
+          (click)="mudarHoras(h)">
+          {{ h }}h
+        </button>
+      </div>
+
+      <button class="refresh-btn" (click)="carregar()" [disabled]="loading" title="Atualizar">
+        <span [class.spinning]="loading">↻</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading skeletons -->
+  <div class="loading-rows" *ngIf="loading">
+    <div class="skeleton-row" *ngFor="let i of [1,2,3,4]"></div>
+  </div>
+
+  <!-- Erro -->
+  <div class="error-msg" *ngIf="erro && !loading">
+    <span>⚠</span> Não foi possível carregar os produtos. Verifique a conexão com o bot.
+  </div>
+
+  <!-- Lista vazia -->
+  <div class="empty-state" *ngIf="!loading && !erro && produtos.length === 0">
+    <span class="empty-icon">📭</span>
+    <span class="empty-text">Nenhum produto enviado nas últimas {{ horas }}h</span>
+  </div>
+
+  <!-- Tabela -->
+  <div class="table-wrapper" *ngIf="!loading && !erro && produtos.length > 0">
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Preço</th>
+          <th>Desconto</th>
+          <th>Canal</th>
+          <th>Enviado em</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of produtos; trackBy: trackById" class="table-row">
+          <td class="col-produto">
+            <div class="produto-info">
+              <img *ngIf="p.imagemUrl" [src]="p.imagemUrl" class="produto-img" alt="img" />
+              <div class="produto-text">
+                <span class="produto-titulo">{{ p.titulo }}</span>
+                <span class="produto-asin mono">ASIN: {{ p.asin }}</span>
+              </div>
+            </div>
+          </td>
+          <td class="col-preco">
+            <div class="preco-wrapper">
+              <span class="preco-atual">{{ formatPreco(p.precoAtual) }}</span>
+              <span class="preco-original" *ngIf="p.precoOriginal">
+                {{ formatPreco(p.precoOriginal) }}
+              </span>
+            </div>
+          </td>
+          <td class="col-desconto">
+            <span class="desconto-badge" [ngClass]="getDescontoClass(p.percentualDesconto)" *ngIf="p.percentualDesconto">
+              -{{ p.percentualDesconto }}%
+            </span>
+            <span *ngIf="!p.percentualDesconto" class="text-muted">—</span>
+          </td>
+          <td class="col-canal">
+            <span class="canal-tag">
+              {{ getCanalIcon(p.canal) }} {{ p.canal || '—' }}
+            </span>
+          </td>
+          <td class="col-data mono">
+            {{ formatData(p.enviadoEm) }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

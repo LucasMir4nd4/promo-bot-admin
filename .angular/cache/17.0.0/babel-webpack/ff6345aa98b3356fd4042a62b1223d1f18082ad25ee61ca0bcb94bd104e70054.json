@@ -1,0 +1,1 @@
+{"ast":null,"code":"import { DashboardPage } from './pages/dashboard/dashboard.page';\nexport const routes = [{\n  path: '',\n  component: DashboardPage\n}, {\n  path: '**',\n  redirectTo: ''\n}];","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

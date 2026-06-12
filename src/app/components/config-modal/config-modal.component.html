@@ -1,0 +1,53 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">
+        <span>⚙️</span>
+        <span>Configurações</span>
+      </div>
+      <button class="close-btn" (click)="cancelar()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="field">
+        <label class="field-label">URL BASE DO BOT</label>
+        <input
+          class="field-input"
+          type="text"
+          [(ngModel)]="urlInput"
+          placeholder="http://localhost:8081"
+          (keyup.enter)="salvar()"
+        />
+        <span class="field-hint">
+          Endereço onde o promo-bot está rodando. Ex: <code>http://localhost:8081</code> ou <code>http://SEU-IP:8081</code>
+        </span>
+      </div>
+
+      <div class="endpoints-preview">
+        <div class="endpoints-label mono">ENDPOINTS CONFIGURADOS</div>
+        <div class="endpoint-line">
+          <span class="method get">GET</span>
+          <span class="path mono">{{ urlInput || '...' }}/api/health</span>
+        </div>
+        <div class="endpoint-line">
+          <span class="method post">POST</span>
+          <span class="path mono">{{ urlInput || '...' }}/api/executar</span>
+        </div>
+        <div class="endpoint-line">
+          <span class="method get">GET</span>
+          <span class="path mono">{{ urlInput || '...' }}/api/enviados?horas=N</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+      <button class="btn-salvar" (click)="salvar()" [class.saved]="salvo">
+        <span *ngIf="!salvo">Salvar</span>
+        <span *ngIf="salvo">✓ Salvo!</span>
+      </button>
+    </div>
+
+  </div>
+</div>
