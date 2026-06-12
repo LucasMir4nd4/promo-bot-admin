@@ -26,12 +26,12 @@ export class ExecutarBtnComponent {
     this.estado = 'loading';
     this.mensagem = null;
     this.produtosEnviados = null;
-    this.addLog('Iniciando ciclo de promoções...');
+    this.addLog('Iniciando ciclo Amazon...');
 
-    this.api.executar().subscribe({
+    this.api.executarAmazon().subscribe({
       next: (res) => {
         this.estado = 'success';
-        this.mensagem = res.message || 'Ciclo executado com sucesso!';
+        this.mensagem = res.message || 'Ciclo Amazon executado com sucesso!';
         this.produtosEnviados = res.produtosEnviados ?? null;
         this.addLog(`✓ ${this.mensagem}`);
         if (this.produtosEnviados !== null) {

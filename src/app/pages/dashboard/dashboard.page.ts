@@ -4,6 +4,7 @@ import { HealthCardComponent } from '../../components/health-card/health-card.co
 import { ExecutarBtnComponent } from '../../components/executar-btn/executar-btn.component';
 import { BuscarCategoriasBtnComponent } from '../../components/buscar-categorias-btn/buscar-categorias-btn.component';
 import { AliexpressBtnComponent } from '../../components/aliexpress-btn/aliexpress-btn.component';
+import { MercadoLivreBtnComponent } from '../../components/mercadolivre-btn/mercadolivre-btn.component';
 import { ProdutosTableComponent } from '../../components/produtos-table/produtos-table.component';
 import { ConfigModalComponent } from '../../components/config-modal/config-modal.component';
 import { BotApiService } from '../../services/bot-api.service';
@@ -17,6 +18,7 @@ import { BotApiService } from '../../services/bot-api.service';
     ExecutarBtnComponent,
     BuscarCategoriasBtnComponent,
     AliexpressBtnComponent,
+    MercadoLivreBtnComponent,
     ProdutosTableComponent,
     ConfigModalComponent
   ],

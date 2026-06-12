@@ -3,14 +3,14 @@
   <!-- Header -->
   <div class="card-header">
     <div class="card-title">
-      <span class="icon">🚀</span>
-      <span>Disparo Manual</span>
+      <span class="icon">📦</span>
+      <span>Amazon</span>
     </div>
   </div>
 
   <!-- Descrição -->
   <p class="card-desc">
-    Força a execução imediata do ciclo de busca de promoções, sem aguardar o scheduler automático.
+    Força a execução imediata do ciclo de busca de promoções da Amazon, sem aguardar o scheduler automático.
   </p>
 
   <!-- Botão principal -->
@@ -21,7 +21,7 @@
     [disabled]="estado === 'loading'">
 
     <span *ngIf="estado === 'idle'" class="btn-content">
-      <span class="btn-icon">▶</span> EXECUTAR CICLO
+      <span class="btn-icon">▶</span> EXECUTAR AMAZON
     </span>
 
     <span *ngIf="estado === 'loading'" class="btn-content">

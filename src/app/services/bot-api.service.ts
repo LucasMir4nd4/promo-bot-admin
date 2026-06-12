@@ -63,15 +63,21 @@ export class BotApiService {
       .pipe(catchError(this.handleError));
   }
 
-  // POST /api/executar
-  executar(): Observable<ExecutarResponse> {
-    return this.http.post<ExecutarResponse>(`${this._baseUrl()}/api/executar`, {})
+  // POST /api/amazon/executar
+  executarAmazon(): Observable<ExecutarResponse> {
+    return this.http.post<ExecutarResponse>(`${this._baseUrl()}/api/amazon/executar`, {})
       .pipe(catchError(this.handleError));
   }
 
-  // POST /api/buscarcategorias
+  // POST /api/mercadolivre/executar
+  executarMercadoLivre(): Observable<ExecutarResponse> {
+    return this.http.post<ExecutarResponse>(`${this._baseUrl()}/api/mercadolivre/executar`, {})
+      .pipe(catchError(this.handleError));
+  }
+
+  // POST /api/mercadolivre/buscarcategorias
   buscarCategorias(): Observable<ExecutarResponse> {
-    return this.http.post<ExecutarResponse>(`${this._baseUrl()}/api/buscarcategorias`, {})
+    return this.http.post<ExecutarResponse>(`${this._baseUrl()}/api/mercadolivre/buscarcategorias`, {})
       .pipe(catchError(this.handleError));
   }
 
