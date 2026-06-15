@@ -2,7 +2,6 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, throwError } from 'rxjs';
 
-// Interface para o retorno do /api/health
 export interface HealthResponse {
   status: string;
   totalProdutosEnviados: number;
@@ -10,7 +9,6 @@ export interface HealthResponse {
   versao?: string;
 }
 
-// Interface para cada produto enviado
 export interface ProdutoEnviado {
   id?: number;
   asin: string;
@@ -19,19 +17,27 @@ export interface ProdutoEnviado {
   precoOriginal?: number;
   percentualDesconto?: number;
   categoria?: string;
-  canal?: string;
   enviadoEm: string;
-  linkAfiliado?: string;
-  imagemUrl?: string;
+  urlAfiliado?: string;
+  urlImagem?: string;
+  enviadoTelegram?: boolean;
+  enviadoWhatsapp?: boolean;
 }
 
-// Interface para o retorno do /api/executar
 export interface ExecutarResponse {
-  message: string;
+  mensagem?: string;
+  message?: string;
   produtosEnviados?: number;
+  timestamp?: string;
 }
 
-// Interface para o retorno do /api/enviados
+export interface LinkFixo {
+  id?: number;
+  mlbId: string;
+  linkAfiliado: string;
+  ativo?: boolean;
+}
+
 interface EnviadosResponse {
   quantidade: number;
   periodo: string;
@@ -84,6 +90,42 @@ export class BotApiService {
   // POST /api/aliexpress/executar
   executarAliexpress(): Observable<ExecutarResponse> {
     return this.http.post<ExecutarResponse>(`${this._baseUrl()}/api/aliexpress/executar`, {})
+      .pipe(catchError(this.handleError));
+  }
+
+  // POST /api/mercadolivre/linksfixos
+  executarLinksFixos(): Observable<ExecutarResponse> {
+    return this.http.post<ExecutarResponse>(`${this._baseUrl()}/api/mercadolivre/linksfixos`, {})
+      .pipe(catchError(this.handleError));
+  }
+
+  // GET /api/links
+  listarLinks(): Observable<LinkFixo[]> {
+    return this.http.get<LinkFixo[]>(`${this._baseUrl()}/api/links`)
+      .pipe(catchError(this.handleError));
+  }
+
+  // POST /api/links
+  adicionarLink(link: Omit<LinkFixo, 'id'>): Observable<LinkFixo> {
+    return this.http.post<LinkFixo>(`${this._baseUrl()}/api/links`, link)
+      .pipe(catchError(this.handleError));
+  }
+
+  // PATCH /api/links/{id}/ativar
+  ativarLink(id: number): Observable<LinkFixo> {
+    return this.http.patch<LinkFixo>(`${this._baseUrl()}/api/links/${id}/ativar`, {})
+      .pipe(catchError(this.handleError));
+  }
+
+  // PATCH /api/links/{id}/desativar
+  desativarLink(id: number): Observable<LinkFixo> {
+    return this.http.patch<LinkFixo>(`${this._baseUrl()}/api/links/${id}/desativar`, {})
+      .pipe(catchError(this.handleError));
+  }
+
+  // DELETE /api/links/{id}
+  deletarLink(id: number): Observable<{ mensagem: string }> {
+    return this.http.delete<{ mensagem: string }>(`${this._baseUrl()}/api/links/${id}`)
       .pipe(catchError(this.handleError));
   }
 

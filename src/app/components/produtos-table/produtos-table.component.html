@@ -58,7 +58,7 @@
         <tr *ngFor="let p of produtos; trackBy: trackById" class="table-row">
           <td class="col-produto">
             <div class="produto-info">
-              <img *ngIf="p.imagemUrl" [src]="p.imagemUrl" class="produto-img" alt="img" />
+              <img *ngIf="p.urlImagem" [src]="p.urlImagem" class="produto-img" alt="img" />
               <div class="produto-text">
                 <span class="produto-titulo">{{ p.titulo }}</span>
                 <span class="produto-asin mono">ASIN: {{ p.asin }}</span>
@@ -80,9 +80,9 @@
             <span *ngIf="!p.percentualDesconto" class="text-muted">—</span>
           </td>
           <td class="col-canal">
-            <span class="canal-tag">
-              {{ getCanalIcon(p.canal) }} {{ p.canal || '—' }}
-            </span>
+            <span class="canal-tag" *ngIf="p.enviadoTelegram">✈️ Telegram</span>
+            <span class="canal-tag" *ngIf="p.enviadoWhatsapp">💬 WhatsApp</span>
+            <span *ngIf="!p.enviadoTelegram && !p.enviadoWhatsapp" class="text-muted">—</span>
           </td>
           <td class="col-data mono">
             {{ formatData(p.enviadoEm) }}

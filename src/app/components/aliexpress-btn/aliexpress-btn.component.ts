@@ -31,7 +31,7 @@ export class AliexpressBtnComponent {
     this.api.executarAliexpress().subscribe({
       next: (res) => {
         this.estado = 'success';
-        this.mensagem = res.message || 'Ciclo AliExpress executado com sucesso!';
+        this.mensagem = res.mensagem || res.message || 'Ciclo AliExpress executado com sucesso!';
         this.produtosEnviados = res.produtosEnviados ?? null;
         this.addLog(`✓ ${this.mensagem}`);
         if (this.produtosEnviados !== null) {

@@ -31,7 +31,7 @@ export class BuscarCategoriasBtnComponent {
     this.api.buscarCategorias().subscribe({
       next: (res) => {
         this.estado = 'success';
-        this.mensagem = res.message || 'Busca por categorias concluída!';
+        this.mensagem = res.mensagem || res.message || 'Busca por categorias concluída!';
         this.produtosEnviados = res.produtosEnviados ?? null;
         this.addLog(`✓ ${this.mensagem}`);
         if (this.produtosEnviados !== null) {

@@ -59,14 +59,6 @@ export class ProdutosTableComponent implements OnInit {
     });
   }
 
-  getCanalIcon(canal?: string): string {
-    if (!canal) return '📢';
-    const c = canal.toLowerCase();
-    if (c.includes('telegram')) return '✈️';
-    if (c.includes('whatsapp')) return '💬';
-    return '📢';
-  }
-
   getDescontoClass(percentualDesconto?: number): string {
     if (!percentualDesconto) return '';
     if (percentualDesconto >= 50) return 'desconto-alto';

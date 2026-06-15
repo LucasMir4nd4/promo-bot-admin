@@ -7,6 +7,7 @@ import { AliexpressBtnComponent } from '../../components/aliexpress-btn/aliexpre
 import { MercadoLivreBtnComponent } from '../../components/mercadolivre-btn/mercadolivre-btn.component';
 import { ProdutosTableComponent } from '../../components/produtos-table/produtos-table.component';
 import { ConfigModalComponent } from '../../components/config-modal/config-modal.component';
+import { LinksFixosComponent } from '../../components/links-fixos/links-fixos.component';
 import { BotApiService } from '../../services/bot-api.service';
 
 @Component({
@@ -20,6 +21,7 @@ import { BotApiService } from '../../services/bot-api.service';
     AliexpressBtnComponent,
     MercadoLivreBtnComponent,
     ProdutosTableComponent,
+    LinksFixosComponent,
     ConfigModalComponent
   ],
   templateUrl: './dashboard.page.html',

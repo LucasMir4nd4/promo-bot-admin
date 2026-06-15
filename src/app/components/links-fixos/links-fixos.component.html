@@ -1,0 +1,135 @@
+<div class="links-card fade-in fade-in-4">
+
+  <!-- Header -->
+  <div class="card-header">
+    <div class="card-title">
+      <span class="icon">🔗</span>
+      <span>Links Fixos</span>
+      <span class="count-badge" *ngIf="!loading">{{ links.length }}</span>
+    </div>
+
+    <div class="header-actions">
+      <button class="refresh-btn" (click)="carregar()" [disabled]="loading" title="Atualizar">
+        <span [class.spinning]="loading">↻</span>
+      </button>
+
+      <button
+        class="exec-btn"
+        [ngClass]="estadoExec"
+        (click)="executarLinksFixos()"
+        [disabled]="estadoExec === 'loading'">
+        <span *ngIf="estadoExec === 'idle'" class="btn-content">
+          <span>▶</span> EXECUTAR
+        </span>
+        <span *ngIf="estadoExec === 'loading'" class="btn-content">
+          <span class="spinner"></span> ENVIANDO...
+        </span>
+        <span *ngIf="estadoExec === 'success'" class="btn-content">✓ ENVIADO</span>
+        <span *ngIf="estadoExec === 'error'" class="btn-content">✗ ERRO</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Feedback exec -->
+  <div class="exec-feedback" *ngIf="mensagemExec" [ngClass]="estadoExec">
+    {{ mensagemExec }}
+  </div>
+
+  <!-- Formulário de adição -->
+  <div class="add-form">
+    <div class="form-row">
+      <input
+        class="field"
+        placeholder="MLB ID  (ex: MLB12345678)"
+        [(ngModel)]="novoMlbId"
+        (keydown.enter)="adicionar()"
+      />
+      <input
+        class="field field-link"
+        placeholder="Link afiliado"
+        [(ngModel)]="novoLink"
+        (keydown.enter)="adicionar()"
+      />
+      <button
+        class="add-btn"
+        (click)="adicionar()"
+        [disabled]="!novoMlbId.trim() || !novoLink.trim() || adicionando">
+        <span *ngIf="!adicionando">+ Adicionar</span>
+        <span *ngIf="adicionando" class="spinner-sm"></span>
+      </button>
+    </div>
+    <div class="form-erro" *ngIf="erroAdicionar">
+      ⚠ Falha ao adicionar. Verifique se o MLB ID já existe.
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-rows" *ngIf="loading">
+    <div class="skeleton-row" *ngFor="let i of [1,2,3]"></div>
+  </div>
+
+  <!-- Erro -->
+  <div class="error-msg" *ngIf="erro && !loading">
+    <span>⚠</span> Não foi possível carregar os links. Verifique a conexão com o bot.
+  </div>
+
+  <!-- Empty -->
+  <div class="empty-state" *ngIf="!loading && !erro && links.length === 0">
+    <span class="empty-icon">🔗</span>
+    <span class="empty-text">Nenhum link fixo cadastrado</span>
+  </div>
+
+  <!-- Lista -->
+  <div class="table-wrapper" *ngIf="!loading && !erro && links.length > 0">
+    <table>
+      <thead>
+        <tr>
+          <th>MLB ID</th>
+          <th>Link afiliado</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let link of links; trackBy: trackById"
+          class="table-row"
+          [class.inativo]="!link.ativo">
+
+          <td class="col-mlb mono">{{ link.mlbId }}</td>
+
+          <td class="col-link">
+            <a [href]="link.linkAfiliado" target="_blank" class="link-text" title="{{ link.linkAfiliado }}">
+              {{ link.linkAfiliado }}
+            </a>
+          </td>
+
+          <td class="col-status">
+            <button
+              class="toggle-btn"
+              [class.ativo]="link.ativo"
+              [class.inativo-btn]="!link.ativo"
+              (click)="toggleAtivo(link)"
+              [disabled]="isPending(link)"
+              [title]="link.ativo ? 'Desativar' : 'Ativar'">
+              <span class="status-dot"></span>
+              {{ link.ativo ? 'Ativo' : 'Inativo' }}
+            </button>
+          </td>
+
+          <td class="col-actions">
+            <button
+              class="delete-btn"
+              (click)="deletar(link)"
+              [disabled]="isPending(link)"
+              title="Remover link">
+              ✕
+            </button>
+          </td>
+
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
