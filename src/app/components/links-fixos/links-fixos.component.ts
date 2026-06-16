@@ -18,15 +18,13 @@ export class LinksFixosComponent implements OnInit {
   loading = true;
   erro = false;
 
-  novoMlbId = '';
-  novoLink = '';
-  adicionando = false;
-  erroAdicionar = false;
-
   estadoExec: EstadoExec = 'idle';
   mensagemExec: string | null = null;
 
   pendingIds = new Set<number>();
+
+  // Rascunho do link de afiliado por item pendente (chave = id do link)
+  rascunhoAfiliado: Record<number, string> = {};
 
   constructor(private api: BotApiService) {}
 
@@ -43,26 +41,33 @@ export class LinksFixosComponent implements OnInit {
     });
   }
 
-  adicionar(): void {
-    const mlbId = this.novoMlbId.trim();
-    const linkAfiliado = this.novoLink.trim();
-    if (!mlbId || !linkAfiliado || this.adicionando) return;
+  /** Item pendente = capturado pelo bot, ainda sem link de afiliado preenchido. */
+  isPendente(link: LinkFixo): boolean {
+    return !link.linkAfiliado || link.linkAfiliado.trim().length === 0;
+  }
 
-    this.adicionando = true;
-    this.erroAdicionar = false;
-    this.api.adicionarLink({ mlbId, linkAfiliado }).subscribe({
-      next: (novo) => {
-        this.links = [novo, ...this.links];
-        this.novoMlbId = '';
-        this.novoLink = '';
-        this.adicionando = false;
+  /** Preenche o link de afiliado de um pendente (o backend já o ativa). */
+  definirAfiliado(link: LinkFixo): void {
+    if (link.id == null || this.pendingIds.has(link.id)) return;
+    const valor = (this.rascunhoAfiliado[link.id] ?? '').trim();
+    if (!valor) return;
+
+    this.pendingIds.add(link.id);
+    this.api.definirAfiliado(link.id, valor).subscribe({
+      next: (atualizado) => {
+        const idx = this.links.findIndex(l => l.id === atualizado.id);
+        if (idx !== -1) this.links[idx] = atualizado;
+        delete this.rascunhoAfiliado[link.id!];
+        this.pendingIds.delete(link.id!);
       },
-      error: () => { this.erroAdicionar = true; this.adicionando = false; }
+      error: () => this.pendingIds.delete(link.id!)
     });
   }
 
   toggleAtivo(link: LinkFixo): void {
     if (link.id == null || this.pendingIds.has(link.id)) return;
+    // Sem link de afiliado não dá pra ativar (o backend recusaria).
+    if (!link.ativo && this.isPendente(link)) return;
     this.pendingIds.add(link.id);
 
     const op = link.ativo

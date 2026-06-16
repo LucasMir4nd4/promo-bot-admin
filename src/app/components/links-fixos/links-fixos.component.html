@@ -35,34 +35,6 @@
     {{ mensagemExec }}
   </div>
 
-  <!-- Formulário de adição -->
-  <div class="add-form">
-    <div class="form-row">
-      <input
-        class="field"
-        placeholder="MLB ID  (ex: MLB12345678)"
-        [(ngModel)]="novoMlbId"
-        (keydown.enter)="adicionar()"
-      />
-      <input
-        class="field field-link"
-        placeholder="Link afiliado"
-        [(ngModel)]="novoLink"
-        (keydown.enter)="adicionar()"
-      />
-      <button
-        class="add-btn"
-        (click)="adicionar()"
-        [disabled]="!novoMlbId.trim() || !novoLink.trim() || adicionando">
-        <span *ngIf="!adicionando">+ Adicionar</span>
-        <span *ngIf="adicionando" class="spinner-sm"></span>
-      </button>
-    </div>
-    <div class="form-erro" *ngIf="erroAdicionar">
-      ⚠ Falha ao adicionar. Verifique se o MLB ID já existe.
-    </div>
-  </div>
-
   <!-- Loading -->
   <div class="loading-rows" *ngIf="loading">
     <div class="skeleton-row" *ngFor="let i of [1,2,3]"></div>
@@ -76,7 +48,7 @@
   <!-- Empty -->
   <div class="empty-state" *ngIf="!loading && !erro && links.length === 0">
     <span class="empty-icon">🔗</span>
-    <span class="empty-text">Nenhum link fixo cadastrado</span>
+    <span class="empty-text">Nenhum item capturado ainda</span>
   </div>
 
   <!-- Lista -->
@@ -84,6 +56,7 @@
     <table>
       <thead>
         <tr>
+          <th>Produto</th>
           <th>MLB ID</th>
           <th>Link afiliado</th>
           <th>Status</th>
@@ -94,18 +67,70 @@
         <tr
           *ngFor="let link of links; trackBy: trackById"
           class="table-row"
-          [class.inativo]="!link.ativo">
+          [class.inativo]="!link.ativo && !isPendente(link)"
+          [class.pendente]="isPendente(link)">
+
+          <!-- Produto (snapshot capturado pelo bot) -->
+          <td class="col-produto">
+            <div class="produto-cell">
+              <img *ngIf="link.urlImagem" [src]="link.urlImagem" class="produto-thumb" alt="" loading="lazy" />
+              <div class="produto-info">
+                <a *ngIf="link.urlProduto; else tituloPlain"
+                   [href]="link.urlProduto" target="_blank"
+                   class="produto-titulo" title="{{ link.titulo }}">
+                  {{ link.titulo || '—' }}
+                </a>
+                <ng-template #tituloPlain>
+                  <span class="produto-titulo" title="{{ link.titulo }}">{{ link.titulo || '—' }}</span>
+                </ng-template>
+                <div class="produto-meta" *ngIf="link.precoAtual != null || link.percentualDesconto != null">
+                  <span class="preco" *ngIf="link.precoAtual != null">
+                    {{ link.precoAtual | currency:'BRL':'symbol':'1.2-2' }}
+                  </span>
+                  <span class="preco-original" *ngIf="link.precoOriginal != null">
+                    {{ link.precoOriginal | currency:'BRL':'symbol':'1.2-2' }}
+                  </span>
+                  <span class="desconto" *ngIf="link.percentualDesconto != null">
+                    -{{ link.percentualDesconto }}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </td>
 
           <td class="col-mlb mono">{{ link.mlbId }}</td>
 
           <td class="col-link">
-            <a [href]="link.linkAfiliado" target="_blank" class="link-text" title="{{ link.linkAfiliado }}">
-              {{ link.linkAfiliado }}
-            </a>
+            <!-- Pendente: input inline pra preencher o link de afiliado -->
+            <div class="afiliado-input" *ngIf="isPendente(link); else linkPronto">
+              <input
+                class="field field-link"
+                placeholder="Cole o link de afiliado"
+                [(ngModel)]="rascunhoAfiliado[link.id!]"
+                (keydown.enter)="definirAfiliado(link)"
+                [disabled]="isPending(link)"
+              />
+              <button
+                class="add-btn"
+                (click)="definirAfiliado(link)"
+                [disabled]="!rascunhoAfiliado[link.id!]?.trim() || isPending(link)">
+                <span *ngIf="!isPending(link)">Salvar</span>
+                <span *ngIf="isPending(link)" class="spinner-sm"></span>
+              </button>
+            </div>
+            <ng-template #linkPronto>
+              <a [href]="link.linkAfiliado" target="_blank" class="link-text" title="{{ link.linkAfiliado }}">
+                {{ link.linkAfiliado }}
+              </a>
+            </ng-template>
           </td>
 
           <td class="col-status">
+            <span class="pendente-badge" *ngIf="isPendente(link)">
+              <span class="status-dot"></span> Pendente
+            </span>
             <button
+              *ngIf="!isPendente(link)"
               class="toggle-btn"
               [class.ativo]="link.ativo"
               [class.inativo-btn]="!link.ativo"

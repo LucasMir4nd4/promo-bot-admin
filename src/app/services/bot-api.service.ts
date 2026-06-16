@@ -34,8 +34,31 @@ export interface ExecutarResponse {
 export interface LinkFixo {
   id?: number;
   mlbId: string;
-  linkAfiliado: string;
+  /** Nulo enquanto o item está pendente (capturado pelo bot, sem link de afiliado). */
+  linkAfiliado?: string | null;
   ativo?: boolean;
+
+  // Snapshot do produto capturado pelo bot (usado na revisão e na publicação)
+  titulo?: string;
+  precoAtual?: number;
+  precoOriginal?: number;
+  percentualDesconto?: number;
+  urlImagem?: string;
+  urlProduto?: string;
+  categoria?: string;
+}
+
+export interface MlAuthLoginResponse {
+  urlAutorizacao: string;
+  state: string;
+}
+
+export interface MlAuthSeedResponse {
+  status: string;
+  mensagem?: string;
+  userId?: number | string;
+  scope?: string;
+  expiraEm?: string;
 }
 
 interface EnviadosResponse {
@@ -105,9 +128,15 @@ export class BotApiService {
       .pipe(catchError(this.handleError));
   }
 
-  // POST /api/links
-  adicionarLink(link: Omit<LinkFixo, 'id'>): Observable<LinkFixo> {
-    return this.http.post<LinkFixo>(`${this._baseUrl()}/api/links`, link)
+  // GET /api/links/pendentes — itens capturados pelo bot sem link de afiliado
+  listarPendentes(): Observable<LinkFixo[]> {
+    return this.http.get<LinkFixo[]>(`${this._baseUrl()}/api/links/pendentes`)
+      .pipe(catchError(this.handleError));
+  }
+
+  // PATCH /api/links/{id}/afiliado — preenche o link de afiliado e já ativa
+  definirAfiliado(id: number, linkAfiliado: string): Observable<LinkFixo> {
+    return this.http.patch<LinkFixo>(`${this._baseUrl()}/api/links/${id}/afiliado`, { linkAfiliado })
       .pipe(catchError(this.handleError));
   }
 
@@ -136,6 +165,18 @@ export class BotApiService {
         map(res => res.produtos ?? []),
         catchError(this.handleError)
       );
+  }
+
+  // GET /api/ml/auth/login — retorna a URL de autorização OAuth2 do Mercado Livre
+  mlAuthLogin(): Observable<MlAuthLoginResponse> {
+    return this.http.get<MlAuthLoginResponse>(`${this._baseUrl()}/api/ml/auth/login`)
+      .pipe(catchError(this.handleError));
+  }
+
+  // POST /api/ml/auth/seed — bootstrap manual colando um refresh_token
+  mlAuthSeed(refreshToken: string): Observable<MlAuthSeedResponse> {
+    return this.http.post<MlAuthSeedResponse>(`${this._baseUrl()}/api/ml/auth/seed`, { refreshToken })
+      .pipe(catchError(this.handleError));
   }
 
   private handleError(error: any): Observable<never> {

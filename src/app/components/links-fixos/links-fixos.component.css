@@ -287,6 +287,83 @@ th {
 .table-row:last-child { border-bottom: none; }
 .table-row:hover { background: var(--bg-card-hover); }
 .table-row.inativo { opacity: 0.5; }
+.table-row.pendente { background: rgba(255, 193, 7, 0.04); }
+
+/* Coluna produto */
+.col-produto { max-width: 320px; }
+
+.produto-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.produto-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.produto-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.produto-titulo {
+  color: var(--text-primary);
+  font-size: 12px;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+
+a.produto-titulo:hover { color: var(--accent); text-decoration: underline; }
+
+.produto-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+}
+
+.produto-meta .preco { color: var(--green); font-size: 12px; font-weight: 600; }
+.produto-meta .preco-original {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-decoration: line-through;
+}
+.produto-meta .desconto { color: var(--red); font-size: 11px; font-weight: 600; }
+
+/* Input inline de afiliado (pendentes) */
+.afiliado-input {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Badge pendente */
+.pendente-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.25);
+  white-space: nowrap;
+}
 
 td { padding: 11px 14px; vertical-align: middle; }
 
