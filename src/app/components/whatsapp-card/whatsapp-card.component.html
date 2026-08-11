@@ -1,0 +1,184 @@
+<div class="whatsapp-card fade-in fade-in-3">
+
+  <!-- Header -->
+  <div class="card-header">
+    <div class="card-title">
+      <span class="icon">📱</span>
+      <span>WhatsApp</span>
+      <span class="estado-badge" [ngClass]="classeEstado()" *ngIf="estadoAtual">
+        <span class="status-dot"></span> {{ labelEstado() }}
+      </span>
+    </div>
+
+    <div class="header-actions">
+      <button class="ghost-btn" (click)="consultarStatus()" [disabled]="!instanciaAtual" title="Consultar status">
+        ↻ Status
+      </button>
+      <button class="ghost-btn danger" (click)="deletarInstancia()" [disabled]="!instanciaAtual" title="Logout + delete da instância">
+        ✕ Remover
+      </button>
+    </div>
+  </div>
+
+  <p class="card-desc">
+    Conecte o número do bot lendo o QR Code abaixo com o WhatsApp do celular
+    (<strong>Aparelhos conectados → Conectar aparelho</strong>). O QR expira em segundos — use
+    <em>Novo QR Code</em> se ele vencer.
+  </p>
+
+  <!-- Formulário de conexão -->
+  <div class="form-row">
+    <input
+      class="field"
+      placeholder="Nome da instância"
+      [(ngModel)]="instancia"
+      [disabled]="estado === 'loading'"
+      (keydown.enter)="conectar()"
+    />
+
+    <label class="check" title="Mata a instância atual antes de recriar — gera um QR Code novo">
+      <input type="checkbox" [(ngModel)]="reiniciar" [disabled]="estado === 'loading'" />
+      <span>reiniciar</span>
+    </label>
+
+    <button
+      class="conectar-btn"
+      [ngClass]="estado"
+      (click)="conectar()"
+      [disabled]="estado === 'loading'">
+      <span *ngIf="estado === 'idle'" class="btn-content"><span class="btn-icon">⚡</span> CONECTAR</span>
+      <span *ngIf="estado === 'loading'" class="btn-content"><span class="spinner"></span> CONECTANDO...</span>
+      <span *ngIf="estado === 'success'" class="btn-content"><span class="btn-icon">✓</span> OK</span>
+      <span *ngIf="estado === 'error'" class="btn-content"><span class="btn-icon">✗</span> ERRO</span>
+    </button>
+  </div>
+
+  <div class="feedback error" *ngIf="mensagem && estado === 'error'">{{ mensagem }}</div>
+
+  <!-- QR Code -->
+  <div class="qr-area">
+
+    <div class="qr-box" *ngIf="qrSrc">
+      <img [src]="qrSrc" alt="QR Code do WhatsApp" class="qr-img" (error)="onQrErro()" />
+      <div class="qr-scan"></div>
+    </div>
+
+    <div class="qr-placeholder" *ngIf="!qrSrc">
+      <span class="qr-icon">{{ conectada ? '✓' : '📷' }}</span>
+      <span class="qr-text" *ngIf="conectada">Instância conectada — não é preciso ler o QR Code.</span>
+      <span class="qr-text" *ngIf="!conectada && qrIndisponivel">
+        Nenhum QR Code disponível agora. Use <em>reiniciar</em> e conecte de novo.
+      </span>
+      <span class="qr-text" *ngIf="!conectada && !qrIndisponivel">
+        Clique em <strong>Conectar</strong> para gerar o QR Code.
+      </span>
+    </div>
+
+    <div class="qr-side">
+      <div class="pairing" *ngIf="conexao?.pairingCode as codigo">
+        <span class="pairing-label mono">CÓDIGO DE PAREAMENTO</span>
+        <span class="pairing-code mono">{{ codigo }}</span>
+      </div>
+
+      <button class="ghost-btn" (click)="novoQrCode()" [disabled]="estado === 'loading' || !instanciaAtual">
+        ↻ Novo QR Code
+      </button>
+
+      <a class="ghost-btn link"
+         *ngIf="instanciaAtual"
+         [href]="qrPngHref"
+         target="_blank">
+        ⬈ Abrir PNG
+      </a>
+
+      <span class="poll-hint mono" *ngIf="qrSrc && !conectada">
+        aguardando leitura...
+      </span>
+    </div>
+  </div>
+
+  <!-- Instâncias cadastradas na Evolution -->
+  <div class="secao">
+    <div class="secao-header">
+      <span class="secao-title mono">INSTÂNCIAS</span>
+      <button class="ghost-btn" (click)="carregarInstancias()" [disabled]="instanciasCarregando">
+        <span *ngIf="!instanciasCarregando">Listar instâncias</span>
+        <span *ngIf="instanciasCarregando" class="btn-content"><span class="spinner-sm"></span> carregando</span>
+      </button>
+    </div>
+
+    <div class="feedback error" *ngIf="instanciasErro">{{ instanciasErro }}</div>
+
+    <div class="grupos-lista" *ngIf="instancias.length > 0">
+      <div class="grupo-item" *ngFor="let inst of instancias">
+        <div class="grupo-info">
+          <span class="grupo-nome">{{ nomeInstancia(inst) }}</span>
+          <span class="grupo-jid mono">{{ estadoInstancia(inst) }}</span>
+        </div>
+        <div class="grupo-actions">
+          <button class="mini-btn" (click)="usarInstancia(inst)" title="Usar esta instância">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grupos -->
+  <div class="secao">
+    <div class="secao-header">
+      <span class="secao-title mono">GRUPOS</span>
+      <button class="ghost-btn" (click)="carregarGrupos()" [disabled]="gruposCarregando || !instanciaAtual">
+        <span *ngIf="!gruposCarregando">Listar grupos</span>
+        <span *ngIf="gruposCarregando" class="btn-content"><span class="spinner-sm"></span> carregando</span>
+      </button>
+    </div>
+
+    <div class="feedback error" *ngIf="gruposErro">{{ gruposErro }}</div>
+
+    <div class="grupos-lista" *ngIf="grupos.length > 0">
+      <div class="grupo-item" *ngFor="let g of grupos; trackBy: trackByJid">
+        <div class="grupo-info">
+          <span class="grupo-nome">{{ g['subject'] || '(sem nome)' }}</span>
+          <span class="grupo-jid mono">{{ g['id'] }}</span>
+        </div>
+        <div class="grupo-actions">
+          <button class="mini-btn" (click)="copiarJid(g['id'])" title="Copiar JID">
+            {{ jidCopiado === g['id'] ? '✓' : '⧉' }}
+          </button>
+          <button class="mini-btn" (click)="usarComoDestino(g['id'])" title="Usar como destino do teste">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensagem de teste -->
+  <div class="secao">
+    <span class="secao-title mono">MENSAGEM DE TESTE</span>
+    <div class="form-row">
+      <input class="field" placeholder="5511999999999 ou xxxx@g.us" [(ngModel)]="destino" />
+      <input class="field field-texto" placeholder="Texto" [(ngModel)]="texto" (keydown.enter)="enviarTeste()" />
+      <button
+        class="enviar-btn"
+        [ngClass]="envioEstado"
+        (click)="enviarTeste()"
+        [disabled]="envioEstado === 'loading' || !destino.trim() || !texto.trim() || !instanciaAtual">
+        <span *ngIf="envioEstado !== 'loading'">Enviar</span>
+        <span *ngIf="envioEstado === 'loading'" class="spinner-sm"></span>
+      </button>
+    </div>
+    <div class="feedback" *ngIf="envioMensagem" [ngClass]="envioEstado === 'success' ? 'success' : 'error'">
+      {{ envioMensagem }}
+    </div>
+  </div>
+
+  <!-- Terminal de logs -->
+  <div class="log-terminal" *ngIf="logs.length > 0">
+    <div class="log-header">
+      <span class="mono">LOG</span>
+      <button class="clear-btn" (click)="limparLogs()">limpar</button>
+    </div>
+    <div class="log-body">
+      <div class="log-line" *ngFor="let log of logs">{{ log }}</div>
+    </div>
+  </div>
+
+</div>

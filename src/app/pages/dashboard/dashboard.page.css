@@ -41,7 +41,14 @@
   gap: 10px;
 }
 
-.logo-icon { font-size: 22px; }
+.logo-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--border-bright);
+  box-shadow: 0 0 16px rgba(255, 165, 2, 0.25);
+}
 
 .logo-text {
   display: flex;
@@ -168,6 +175,7 @@
 @media (max-width: 480px) {
   .logo-name { font-size: 13px; }
   .logo-sub { display: none; }
+  .logo-img { width: 30px; height: 30px; }
 }
 
 .mono { font-family: var(--font-mono); }

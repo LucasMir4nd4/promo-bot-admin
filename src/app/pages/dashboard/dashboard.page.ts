@@ -8,6 +8,8 @@ import { MercadoLivreBtnComponent } from '../../components/mercadolivre-btn/merc
 import { ProdutosTableComponent } from '../../components/produtos-table/produtos-table.component';
 import { ConfigModalComponent } from '../../components/config-modal/config-modal.component';
 import { LinksFixosComponent } from '../../components/links-fixos/links-fixos.component';
+import { WhatsappCardComponent } from '../../components/whatsapp-card/whatsapp-card.component';
+import { MlAuthCardComponent } from '../../components/ml-auth-card/ml-auth-card.component';
 import { BotApiService } from '../../services/bot-api.service';
 
 @Component({
@@ -22,6 +24,8 @@ import { BotApiService } from '../../services/bot-api.service';
     MercadoLivreBtnComponent,
     ProdutosTableComponent,
     LinksFixosComponent,
+    WhatsappCardComponent,
+    MlAuthCardComponent,
     ConfigModalComponent
   ],
   templateUrl: './dashboard.page.html',

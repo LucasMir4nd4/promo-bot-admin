@@ -7,9 +7,9 @@
   <header class="topbar">
     <div class="topbar-left">
       <div class="logo">
-        <span class="logo-icon">🤖</span>
+        <img src="assets/logo.png" alt="Lucão da Promoção" class="logo-img" />
         <div class="logo-text">
-          <span class="logo-name">PromoBot</span>
+          <span class="logo-name">Lucão da Promoção</span>
           <span class="logo-sub mono">ADMIN PANEL</span>
         </div>
       </div>
@@ -45,9 +45,15 @@
       <app-buscar-categorias-btn class="card-col" />
     </div>
 
-    <!-- Linha AliExpress -->
+    <!-- Linha AliExpress + OAuth do Mercado Livre -->
     <div class="top-row">
       <app-aliexpress-btn class="card-col" />
+      <app-ml-auth-card class="card-col" />
+    </div>
+
+    <!-- WhatsApp: conexão via QR Code (linha completa) -->
+    <div class="full-row">
+      <app-whatsapp-card />
     </div>
 
     <!-- Links fixos (linha completa) -->

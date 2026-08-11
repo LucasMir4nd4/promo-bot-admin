@@ -1,0 +1,65 @@
+<div class="ml-card fade-in fade-in-3">
+
+  <div class="card-header">
+    <div class="card-title">
+      <span class="icon">🔑</span>
+      <span>Mercado Livre · OAuth</span>
+    </div>
+  </div>
+
+  <p class="card-desc">
+    Bootstrap manual do token do Mercado Livre — feito uma vez. Depois disso o bot renova
+    sozinho e esta seção não é mais necessária.
+  </p>
+
+  <!-- Caminho A: autorização pelo navegador -->
+  <button
+    class="login-btn"
+    [ngClass]="estadoLogin"
+    (click)="gerarLogin()"
+    [disabled]="estadoLogin === 'loading'">
+    <span *ngIf="estadoLogin === 'idle'" class="btn-content"><span class="btn-icon">⬈</span> AUTORIZAR NO MERCADO LIVRE</span>
+    <span *ngIf="estadoLogin === 'loading'" class="btn-content"><span class="spinner"></span> GERANDO URL...</span>
+    <span *ngIf="estadoLogin === 'success'" class="btn-content"><span class="btn-icon">✓</span> URL ABERTA</span>
+    <span *ngIf="estadoLogin === 'error'" class="btn-content"><span class="btn-icon">✗</span> ERRO</span>
+  </button>
+
+  <div class="feedback error" *ngIf="erroLogin">{{ erroLogin }}</div>
+
+  <div class="url-box" *ngIf="urlAutorizacao">
+    <span class="url-label mono">URL DE AUTORIZAÇÃO</span>
+    <a [href]="urlAutorizacao" target="_blank" class="url-link mono">{{ urlAutorizacao }}</a>
+    <div class="url-actions">
+      <span class="state-tag mono" *ngIf="state">state: {{ state }}</span>
+      <button class="ghost-btn" (click)="copiarUrl()">⧉ copiar</button>
+    </div>
+  </div>
+
+  <!-- Caminho B: colar refresh token -->
+  <div class="secao">
+    <span class="secao-title mono">OU COLE UM REFRESH TOKEN</span>
+    <div class="form-row">
+      <input
+        class="field field-token"
+        placeholder="TG-..."
+        [(ngModel)]="refreshToken"
+        [disabled]="estadoSeed === 'loading'"
+        (keydown.enter)="enviarSeed()"
+      />
+      <button
+        class="seed-btn"
+        [ngClass]="estadoSeed"
+        (click)="enviarSeed()"
+        [disabled]="estadoSeed === 'loading' || !refreshToken.trim()">
+        <span *ngIf="estadoSeed !== 'loading'">Salvar</span>
+        <span *ngIf="estadoSeed === 'loading'" class="spinner-sm"></span>
+      </button>
+    </div>
+
+    <div class="feedback" *ngIf="seedMensagem" [ngClass]="estadoSeed === 'success' ? 'success' : 'error'">
+      {{ seedMensagem }}
+      <div class="seed-detalhe mono" *ngIf="seedDetalhe">{{ seedDetalhe }}</div>
+    </div>
+  </div>
+
+</div>

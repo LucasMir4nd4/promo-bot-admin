@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, throwError } from 'rxjs';
 
 export interface HealthResponse {
@@ -59,6 +59,42 @@ export interface MlAuthSeedResponse {
   userId?: number | string;
   scope?: string;
   expiraEm?: string;
+}
+
+/** GET /api/whatsapp/config — defaults que o front usa pra montar a tela. */
+export interface WhatsAppConfig {
+  instanciaPadrao: string;
+  reiniciarPadrao: boolean;
+}
+
+/** POST /api/whatsapp/instancias/conectar */
+export interface WhatsAppConexao {
+  instancia: string;
+  reiniciada: boolean;
+  anteriorRemovida: boolean;
+  criada: boolean;
+  estado: string;
+  /** data URI pronto para <img src="...">; vem null quando já está conectada */
+  qrcode: string | null;
+  pairingCode: string | null;
+  qrcodeImagemUrl: string;
+}
+
+export interface WhatsAppStatus {
+  instancia: string;
+  estado: string;
+  conectada: boolean;
+}
+
+export interface WhatsAppInstancia {
+  [campo: string]: any;
+}
+
+export interface WhatsAppGrupo {
+  id?: string;
+  subject?: string;
+  size?: number;
+  [campo: string]: any;
 }
 
 interface EnviadosResponse {
@@ -177,6 +213,68 @@ export class BotApiService {
   mlAuthSeed(refreshToken: string): Observable<MlAuthSeedResponse> {
     return this.http.post<MlAuthSeedResponse>(`${this._baseUrl()}/api/ml/auth/seed`, { refreshToken })
       .pipe(catchError(this.handleError));
+  }
+
+  // ─── WhatsApp / Evolution API ──────────────────────────────────────────────
+
+  // GET /api/whatsapp/config
+  whatsappConfig(): Observable<WhatsAppConfig> {
+    return this.http.get<WhatsAppConfig>(`${this._baseUrl()}/api/whatsapp/config`)
+      .pipe(catchError(this.handleError));
+  }
+
+  // GET /api/whatsapp/instancias
+  listarInstancias(): Observable<WhatsAppInstancia[]> {
+    return this.http.get<WhatsAppInstancia[]>(`${this._baseUrl()}/api/whatsapp/instancias`)
+      .pipe(catchError(this.handleError));
+  }
+
+  // POST /api/whatsapp/instancias/conectar?instancia=...&reiniciar=...
+  conectarWhatsapp(instancia?: string, reiniciar?: boolean): Observable<WhatsAppConexao> {
+    let params = new HttpParams();
+    if (instancia?.trim()) params = params.set('instancia', instancia.trim());
+    if (reiniciar !== undefined) params = params.set('reiniciar', String(reiniciar));
+
+    return this.http.post<WhatsAppConexao>(
+      `${this._baseUrl()}/api/whatsapp/instancias/conectar`, {}, { params }
+    ).pipe(catchError(this.handleError));
+  }
+
+  // GET /api/whatsapp/instancias/{instancia}/status
+  statusWhatsapp(instancia: string): Observable<WhatsAppStatus> {
+    return this.http.get<WhatsAppStatus>(
+      `${this._baseUrl()}/api/whatsapp/instancias/${encodeURIComponent(instancia)}/status`
+    ).pipe(catchError(this.handleError));
+  }
+
+  /**
+   * URL do QR Code em PNG servido pelo backend. O parâmetro `cacheBust` força o
+   * navegador a rebuscar a imagem — sem ele o <img> reaproveita o QR já expirado.
+   */
+  qrCodeUrl(instancia: string, cacheBust: number = Date.now()): string {
+    return `${this._baseUrl()}/api/whatsapp/instancias/${encodeURIComponent(instancia)}/qrcode.png?t=${cacheBust}`;
+  }
+
+  // GET /api/whatsapp/instancias/{instancia}/grupos
+  listarGrupos(instancia: string): Observable<WhatsAppGrupo[]> {
+    return this.http.get<WhatsAppGrupo[]>(
+      `${this._baseUrl()}/api/whatsapp/instancias/${encodeURIComponent(instancia)}/grupos`
+    ).pipe(catchError(this.handleError));
+  }
+
+  // POST /api/whatsapp/instancias/{instancia}/mensagem
+  enviarMensagem(instancia: string, destino: string, texto: string): Observable<any> {
+    return this.http.post<any>(
+      `${this._baseUrl()}/api/whatsapp/instancias/${encodeURIComponent(instancia)}/mensagem`,
+      { destino, texto }
+    ).pipe(catchError(this.handleError));
+  }
+
+  // DELETE /api/whatsapp/instancias/{instancia}
+  deletarInstancia(instancia: string): Observable<{ instancia: string; removida: boolean; mensagem: string }> {
+    return this.http.delete<{ instancia: string; removida: boolean; mensagem: string }>(
+      `${this._baseUrl()}/api/whatsapp/instancias/${encodeURIComponent(instancia)}`
+    ).pipe(catchError(this.handleError));
   }
 
   private handleError(error: any): Observable<never> {
