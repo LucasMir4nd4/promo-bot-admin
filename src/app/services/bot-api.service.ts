@@ -170,6 +170,15 @@ export class BotApiService {
       .pipe(catchError(this.handleError));
   }
 
+  // POST /api/links — cadastra um link fixo manualmente pelo MLB ID
+  adicionarLink(mlbId: string, linkAfiliado?: string): Observable<LinkFixo> {
+    const body: Partial<LinkFixo> = { mlbId };
+    if (linkAfiliado?.trim()) body.linkAfiliado = linkAfiliado.trim();
+
+    return this.http.post<LinkFixo>(`${this._baseUrl()}/api/links`, body)
+      .pipe(catchError(this.handleError));
+  }
+
   // PATCH /api/links/{id}/afiliado — preenche o link de afiliado e já ativa
   definirAfiliado(id: number, linkAfiliado: string): Observable<LinkFixo> {
     return this.http.patch<LinkFixo>(`${this._baseUrl()}/api/links/${id}/afiliado`, { linkAfiliado })
