@@ -1,3 +1,10 @@
+/* O card ocupa toda a altura da célula do grid — sem isto, cards de conteúdos
+   diferentes na mesma linha ficam com alturas distintas. */
+:host {
+  display: block;
+  height: 100%;
+}
+
 .health-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -9,6 +16,7 @@
   transition: border-color var(--transition), box-shadow var(--transition);
   position: relative;
   overflow: hidden;
+  height: 100%;
 }
 
 .health-card::before {
@@ -169,6 +177,7 @@
 
 /* Footer */
 .card-footer {
+  margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;

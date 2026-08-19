@@ -1,3 +1,10 @@
+/* O card ocupa toda a altura da célula do grid — sem isto, cards de conteúdos
+   diferentes na mesma linha ficam com alturas distintas. */
+:host {
+  display: block;
+  height: 100%;
+}
+
 .executar-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -9,6 +16,7 @@
   position: relative;
   overflow: hidden;
   transition: border-color var(--transition);
+  height: 100%;
 }
 
 .executar-card::before {
@@ -41,7 +49,9 @@
 
 .icon { font-size: 14px; }
 
+/* Absorve a folga quando o card vizinho é mais alto, ancorando o botão embaixo. */
 .card-desc {
+  flex: 1;
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.6;

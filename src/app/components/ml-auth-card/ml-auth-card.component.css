@@ -1,3 +1,10 @@
+/* O card ocupa toda a altura da célula do grid — sem isto, cards de conteúdos
+   diferentes na mesma linha ficam com alturas distintas. */
+:host {
+  display: block;
+  height: 100%;
+}
+
 .ml-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
