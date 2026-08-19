@@ -31,6 +31,12 @@ export interface ExecutarResponse {
   timestamp?: string;
 }
 
+/** Item de GET /api/mercadolivre/buscarcategorias — categoria raiz do ML. */
+export interface CategoriaMl {
+  id: string;
+  nome: string;
+}
+
 export interface LinkFixo {
   id?: number;
   mlbId: string;
@@ -128,22 +134,19 @@ export class BotApiService {
       .pipe(catchError(this.handleError));
   }
 
-  // POST /api/amazon/executar
-  executarAmazon(): Observable<ExecutarResponse> {
-    return this.http.post<ExecutarResponse>(`${this._baseUrl()}/api/amazon/executar`, {})
-      .pipe(catchError(this.handleError));
-  }
-
   // POST /api/mercadolivre/executar
   executarMercadoLivre(): Observable<ExecutarResponse> {
     return this.http.post<ExecutarResponse>(`${this._baseUrl()}/api/mercadolivre/executar`, {})
       .pipe(catchError(this.handleError));
   }
 
-  // POST /api/mercadolivre/buscarcategorias
-  buscarCategorias(): Observable<ExecutarResponse> {
-    return this.http.post<ExecutarResponse>(`${this._baseUrl()}/api/mercadolivre/buscarcategorias`, {})
-      .pipe(catchError(this.handleError));
+  // GET /api/mercadolivre/buscarcategorias — lista as categorias raiz do ML
+  buscarCategorias(): Observable<CategoriaMl[]> {
+    return this.http.get<CategoriaMl[]>(`${this._baseUrl()}/api/mercadolivre/buscarcategorias`)
+      .pipe(
+        map(res => res ?? []),
+        catchError(this.handleError)
+      );
   }
 
   // POST /api/aliexpress/executar

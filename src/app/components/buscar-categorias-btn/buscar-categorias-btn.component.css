@@ -134,24 +134,63 @@
   color: var(--red);
 }
 
-.produtos-count {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.count-num {
-  font-family: var(--font-mono);
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--green);
-}
-
-.count-label {
-  font-size: 12px;
+.categorias-total {
   color: var(--text-muted);
-  text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.categorias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.categoria-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.categoria-item:hover { border-color: var(--border-bright); }
+
+.categoria-item.copiado {
+  border-color: rgba(0, 230, 118, 0.4);
+  background: var(--green-dim);
+}
+
+.categoria-id {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.categoria-nome {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categoria-copiado {
+  flex-shrink: 0;
+  color: var(--green);
+  font-size: 10px;
 }
 
 .log-terminal {

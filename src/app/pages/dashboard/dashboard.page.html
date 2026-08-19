@@ -33,22 +33,21 @@
   <!-- Conteúdo principal -->
   <main class="main-content">
 
-    <!-- Linha superior: Status + Executar Amazon -->
+    <!-- Linha superior: Status + Executar Mercado Livre -->
     <div class="top-row">
       <app-health-card class="card-col" />
-      <app-executar-btn class="card-col" />
-    </div>
-
-    <!-- Linha de ações adicionais -->
-    <div class="top-row">
       <app-mercadolivre-btn class="card-col" />
-      <app-buscar-categorias-btn class="card-col" />
     </div>
 
     <!-- Linha AliExpress + OAuth do Mercado Livre -->
     <div class="top-row">
       <app-aliexpress-btn class="card-col" />
       <app-ml-auth-card class="card-col" />
+    </div>
+
+    <!-- Categorias do Mercado Livre (linha completa) -->
+    <div class="full-row">
+      <app-buscar-categorias-btn />
     </div>
 
     <!-- WhatsApp: conexão via QR Code (linha completa) -->

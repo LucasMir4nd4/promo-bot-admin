@@ -4,13 +4,17 @@
   <div class="card-header">
     <div class="card-title">
       <span class="icon">🔍</span>
-      <span>Buscar Categorias</span>
+      <span>Categorias do Mercado Livre</span>
     </div>
+    <span class="categorias-total mono" *ngIf="categorias.length">
+      {{ categorias.length }} categorias
+    </span>
   </div>
 
   <!-- Descrição -->
   <p class="card-desc">
-    Força a busca manual de promoções por categoria no marketplace, sem aguardar o scheduler automático.
+    Consulta as categorias raiz do Mercado Livre. Use os IDs (MLB…) para configurar
+    quais categorias o bot varre em busca de promoções — clique num ID para copiar.
   </p>
 
   <!-- Botão principal -->
@@ -40,13 +44,24 @@
 
   <!-- Feedback de resultado -->
   <div class="resultado" *ngIf="mensagem && estado !== 'loading'">
-    <div class="resultado-msg" [ngClass]="estado === 'success' ? 'success' : 'error'">
+    <div class="resultado-msg" [ngClass]="estado === 'error' ? 'error' : 'success'">
       {{ mensagem }}
     </div>
-    <div class="produtos-count" *ngIf="produtosEnviados !== null && estado === 'success'">
-      <span class="count-num">{{ produtosEnviados }}</span>
-      <span class="count-label">produto(s) enviado(s)</span>
-    </div>
+  </div>
+
+  <!-- Lista de categorias retornadas -->
+  <div class="categorias-grid" *ngIf="categorias.length">
+    <button
+      type="button"
+      class="categoria-item"
+      *ngFor="let c of categorias"
+      [class.copiado]="idCopiado === c.id"
+      (click)="copiarId(c.id)"
+      [title]="'Copiar ' + c.id">
+      <span class="categoria-id mono">{{ c.id }}</span>
+      <span class="categoria-nome">{{ c.nome }}</span>
+      <span class="categoria-copiado mono" *ngIf="idCopiado === c.id">copiado</span>
+    </button>
   </div>
 
   <!-- Terminal de logs -->

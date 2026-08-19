@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BotApiService } from '../../services/bot-api.service';
+import { BotApiService, CategoriaMl } from '../../services/bot-api.service';
 
 type EstadoBtn = 'idle' | 'loading' | 'success' | 'error';
 
@@ -15,7 +15,9 @@ export class BuscarCategoriasBtnComponent {
 
   estado: EstadoBtn = 'idle';
   mensagem: string | null = null;
-  produtosEnviados: number | null = null;
+  categorias: CategoriaMl[] = [];
+  /** ID copiado por último — usado só para o feedback visual de "copiado". */
+  idCopiado: string | null = null;
   logs: string[] = [];
 
   constructor(private api: BotApiService) {}
@@ -25,26 +27,33 @@ export class BuscarCategoriasBtnComponent {
 
     this.estado = 'loading';
     this.mensagem = null;
-    this.produtosEnviados = null;
-    this.addLog('Buscando promoções por categoria...');
+    this.addLog('Consultando categorias do Mercado Livre...');
 
     this.api.buscarCategorias().subscribe({
-      next: (res) => {
+      next: (categorias) => {
         this.estado = 'success';
-        this.mensagem = res.mensagem || res.message || 'Busca por categorias concluída!';
-        this.produtosEnviados = res.produtosEnviados ?? null;
+        this.categorias = categorias;
+        this.mensagem = categorias.length
+          ? `${categorias.length} categoria(s) retornada(s) pelo Mercado Livre.`
+          : 'O Mercado Livre não retornou nenhuma categoria.';
         this.addLog(`✓ ${this.mensagem}`);
-        if (this.produtosEnviados !== null) {
-          this.addLog(`✓ ${this.produtosEnviados} produto(s) enviado(s)`);
-        }
         setTimeout(() => this.estado = 'idle', 5000);
       },
       error: (err) => {
         this.estado = 'error';
+        this.categorias = [];
         this.mensagem = err?.error?.message || 'Falha ao buscar categorias. Verifique se o bot está online.';
         this.addLog(`✗ Erro: ${this.mensagem}`);
         setTimeout(() => this.estado = 'idle', 5000);
       }
+    });
+  }
+
+  /** Os IDs (MLB…) são o que vai na config de categorias do bot, então copiar ajuda. */
+  copiarId(id: string): void {
+    navigator.clipboard?.writeText(id).then(() => {
+      this.idCopiado = id;
+      setTimeout(() => { if (this.idCopiado === id) this.idCopiado = null; }, 1500);
     });
   }
 

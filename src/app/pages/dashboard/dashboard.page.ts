@@ -1,7 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HealthCardComponent } from '../../components/health-card/health-card.component';
-import { ExecutarBtnComponent } from '../../components/executar-btn/executar-btn.component';
 import { BuscarCategoriasBtnComponent } from '../../components/buscar-categorias-btn/buscar-categorias-btn.component';
 import { AliexpressBtnComponent } from '../../components/aliexpress-btn/aliexpress-btn.component';
 import { MercadoLivreBtnComponent } from '../../components/mercadolivre-btn/mercadolivre-btn.component';
@@ -18,7 +17,6 @@ import { BotApiService } from '../../services/bot-api.service';
   imports: [
     CommonModule,
     HealthCardComponent,
-    ExecutarBtnComponent,
     BuscarCategoriasBtnComponent,
     AliexpressBtnComponent,
     MercadoLivreBtnComponent,
