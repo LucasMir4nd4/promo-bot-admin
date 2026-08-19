@@ -68,33 +68,88 @@
     {{ mensagemExec }}
   </div>
 
-  <!-- Busca (filtra a lista) + cadastro manual pelo MLB ID -->
+  <!-- Busca na lista + cadastro por link do Mercado Livre -->
   <div class="add-form" *ngIf="!loading && !erro">
     <div class="form-row busca-barra">
       <div class="busca-campo">
         <span class="busca-icone">🔍</span>
         <input
           class="field field-link busca-input"
-          placeholder="Buscar por MLB ID, título ou cole a URL do produto"
+          placeholder="Cole a URL do produto no Mercado Livre — ou busque por ID/título"
           [(ngModel)]="busca"
-          (keydown.enter)="adicionarPorId()"
+          (ngModelChange)="aoDigitar()"
+          (keydown.enter)="analisar()"
         />
+        <span class="busca-analisando" *ngIf="analisando">
+          <span class="spinner-sm"></span>
+        </span>
         <button
           class="busca-limpar"
           *ngIf="buscando"
           (click)="limparBusca()"
-          title="Limpar busca">✕</button>
+          title="Limpar">✕</button>
+      </div>
+    </div>
+
+    <!-- Card de confirmação: o que o bot entendeu do link, antes de gravar -->
+    <div class="preview-card" *ngIf="preview" [class.invalido]="!preview.utilizavel">
+
+      <div class="preview-topo">
+        <span class="preview-tag" [ngClass]="preview.tipoDetectado">{{ rotuloTipo }}</span>
+        <span class="preview-id mono" *ngIf="preview.mlbId">{{ preview.mlbId }}</span>
+        <span class="preview-resolvido" *ngIf="preview.resolvidoDeCatalogo"
+              title="A URL era de catálogo; este é o anúncio vencedor">
+          ↳ resolvido de {{ preview.idDetectado }}
+        </span>
+        <button class="preview-fechar" (click)="cancelarPreview()" title="Descartar">✕</button>
       </div>
 
-      <button
-        class="add-btn"
-        *ngIf="mlbIdParaAdicionar"
-        (click)="adicionarPorId()"
-        [disabled]="adicionando"
-        title="Cadastrar este produto nos links fixos">
-        <span *ngIf="!adicionando">+ Adicionar {{ mlbIdParaAdicionar }}</span>
-        <span *ngIf="adicionando" class="spinner-sm"></span>
-      </button>
+      <div class="preview-corpo" *ngIf="preview.produto">
+        <img
+          class="preview-foto"
+          *ngIf="preview.produto.urlImagem"
+          [src]="preview.produto.urlImagem"
+          [alt]="preview.produto.titulo || 'Produto'" />
+
+        <div class="preview-dados">
+          <div class="preview-titulo">{{ preview.produto.titulo || 'Sem título' }}</div>
+          <div class="preview-precos">
+            <span class="preco-atual" *ngIf="preview.produto.precoAtual">
+              {{ preview.produto.precoAtual | currency:'BRL':'symbol':'1.2-2' }}
+            </span>
+            <span class="preco-antigo"
+                  *ngIf="preview.produto.precoOriginal && preview.produto.precoOriginal > (preview.produto.precoAtual || 0)">
+              {{ preview.produto.precoOriginal | currency:'BRL':'symbol':'1.2-2' }}
+            </span>
+            <span class="preco-off" *ngIf="preview.produto.percentualDesconto">
+              {{ preview.produto.percentualDesconto }}% OFF
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="preview-mensagem" [class.alerta]="!preview.utilizavel">
+        {{ preview.mensagem }}
+      </div>
+      <div class="preview-resolver" *ngIf="preview.comoResolver">
+        💡 {{ preview.comoResolver }}
+      </div>
+
+      <div class="preview-acoes" *ngIf="preview.utilizavel">
+        <input
+          class="field field-afiliado"
+          placeholder="Link de afiliado (opcional) — se preencher, já entra ativo"
+          [(ngModel)]="linkAfiliadoNovo"
+          (keydown.enter)="confirmarCadastro()" />
+
+        <button
+          class="add-btn"
+          (click)="confirmarCadastro()"
+          [disabled]="adicionando">
+          <span *ngIf="!adicionando">+ Cadastrar {{ preview.mlbId }}</span>
+          <span *ngIf="adicionando" class="spinner-sm"></span>
+        </button>
+      </div>
     </div>
 
     <div class="form-erro" *ngIf="erroAdicionar">⚠ {{ erroAdicionar }}</div>
@@ -145,6 +200,14 @@
         [disabled]="totalSelecionados === 0 || !!acaoLote">
         Limpar
       </button>
+
+      <button
+        class="lote-btn excluir-tudo"
+        (click)="limparTudo()"
+        [disabled]="!!acaoLote"
+        title="Remove todos os links, inclusive os de afiliado já preenchidos">
+        Apagar tudo
+      </button>
     </div>
   </div>
 
@@ -176,15 +239,20 @@
 
     <button
       class="add-btn"
-      *ngIf="mlbIdParaAdicionar; else dicaBusca"
-      (click)="adicionarPorId()"
-      [disabled]="adicionando">
-      <span *ngIf="!adicionando">+ Adicionar {{ mlbIdParaAdicionar }}</span>
-      <span *ngIf="adicionando" class="spinner-sm"></span>
+      *ngIf="pareceLinkMl && !preview; else dicaBusca"
+      (click)="analisar()"
+      [disabled]="analisando">
+      <span *ngIf="!analisando">🔎 Analisar este link</span>
+      <span *ngIf="analisando" class="spinner-sm"></span>
     </button>
 
     <ng-template #dicaBusca>
-      <span class="empty-dica mono">Informe um MLB ID (ex: MLB3612849271) ou a URL do produto para cadastrar</span>
+      <span class="empty-dica mono" *ngIf="!preview">
+        Cole a URL do produto no Mercado Livre (ou o ID MLB3612849271) para cadastrar
+      </span>
+      <span class="empty-dica mono" *ngIf="preview">
+        Confira o card acima e confirme o cadastro
+      </span>
     </ng-template>
   </div>
 

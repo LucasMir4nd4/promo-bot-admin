@@ -1109,3 +1109,174 @@ td { padding: 11px 14px; vertical-align: middle; }
 }
 
 .mono { font-family: var(--font-mono); }
+
+/* ───────────────────────────────────────────────────────────────
+   Card de preview do link colado
+   Mostra o que o bot entendeu ANTES de gravar: tipo do ID, anúncio
+   resolvido, foto e preço. A borda muda de cor quando o link não
+   serve, para a recusa ser óbvia sem precisar ler o texto.
+   ─────────────────────────────────────────────────────────────── */
+
+.preview-card {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--bg-card-hover);
+  border: 1px solid var(--border-bright);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  animation: preview-entrada 180ms ease;
+}
+
+.preview-card.invalido { border-left-color: var(--orange); }
+
+@keyframes preview-entrada {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.preview-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.preview-tag {
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Cada tipo de ID ganha uma cor: publicável, precisa resolver, não serve. */
+.preview-tag.ITEM            { background: var(--green-dim);  color: var(--green); }
+.preview-tag.CATALOG_PRODUCT { background: var(--accent-dim); color: var(--accent); }
+.preview-tag.USER_PRODUCT    { background: var(--orange-dim); color: var(--orange); }
+.preview-tag.DESCONHECIDO    { background: var(--red-dim);    color: var(--red); }
+
+.preview-id {
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.preview-resolvido {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.preview-fechar {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: var(--transition);
+}
+.preview-fechar:hover { color: var(--red); background: var(--red-dim); }
+
+.preview-corpo {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.preview-foto {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.preview-dados { min-width: 0; flex: 1; }
+
+.preview-titulo {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.preview-precos {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preview-precos .preco-atual {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.preview-precos .preco-antigo {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.preview-precos .preco-off {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.preview-mensagem {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.preview-mensagem.alerta { color: var(--orange); }
+
+.preview-resolver {
+  margin-top: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+}
+
+.preview-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.preview-acoes .field-afiliado {
+  flex: 1;
+  min-width: 240px;
+}
+
+.busca-analisando {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+}
+
+.lote-btn.excluir-tudo {
+  border-color: var(--red);
+  color: var(--red);
+}
+.lote-btn.excluir-tudo:hover:not(:disabled) {
+  background: var(--red);
+  color: var(--bg-primary);
+}

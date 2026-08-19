@@ -2,7 +2,7 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
-import { BotApiService, LinkFixo } from '../../services/bot-api.service';
+import { BotApiService, LinkFixo, LinkPreview } from '../../services/bot-api.service';
 
 type EstadoExec = 'idle' | 'loading' | 'success' | 'error';
 type Visao = 'grade' | 'tabela';
@@ -58,6 +58,23 @@ export class LinksFixosComponent implements OnInit {
 
   adicionando = false;
   erroAdicionar: string | null = null;
+
+  // ─── Cadastro por link (preview antes de gravar) ────────────────────────────
+
+  /** O que o backend entendeu do link colado. Null = nada para confirmar ainda. */
+  preview: LinkPreview | null = null;
+
+  /** Uma análise em voo. Trava o botão e evita pedir duas vezes o mesmo texto. */
+  analisando = false;
+
+  /** Link de afiliado opcional: preenchido aqui, o item já nasce ativo. */
+  linkAfiliadoNovo = '';
+
+  /** Adia a análise enquanto o usuário ainda está digitando/colando. */
+  private timerPreview: any = null;
+
+  /** Última entrada analisada, para não repetir a chamada à toa. */
+  private ultimaEntradaAnalisada: string | null = null;
 
   constructor(private api: BotApiService) {}
 
@@ -153,17 +170,15 @@ export class LinksFixosComponent implements OnInit {
     });
   }
 
-  // ─── Busca e cadastro manual ───────────────────────────────────────────────
+  // ─── Busca e cadastro por link ─────────────────────────────────────────────
 
-  /** Extrai/normaliza o MLB ID de um texto livre (id solto, com hífen ou URL colada). */
-  private extrairMlbId(texto: string): string | null {
-    const t = texto.trim().toUpperCase();
-
-    const comPrefixo = t.match(/MLB-?(\d{6,})/);
-    if (comPrefixo) return `MLB${comPrefixo[1]}`;
-
-    const soDigitos = t.match(/^(\d{8,})$/);
-    return soDigitos ? `MLB${soDigitos[1]}` : null;
+  /**
+   * Normalizador só para FILTRAR a lista local. Quem decide o que é um ID válido
+   * de verdade é o backend, no preview — aqui basta casar texto.
+   */
+  private idAproximado(texto: string): string | null {
+    const m = texto.trim().toUpperCase().match(/MLB-?(\d{6,})/);
+    return m ? `MLB${m[1]}` : null;
   }
 
   /** Lista exibida: tudo quando a busca está vazia, senão o que casa por id ou título. */
@@ -171,7 +186,7 @@ export class LinksFixosComponent implements OnInit {
     const termo = this.busca.trim().toLowerCase();
     if (!termo) return this.links;
 
-    const id = this.extrairMlbId(this.busca)?.toLowerCase();
+    const id = this.idAproximado(this.busca)?.toLowerCase();
     return this.links.filter(l =>
       (l.mlbId ?? '').toLowerCase().includes(id ?? termo) ||
       (l.titulo ?? '').toLowerCase().includes(termo)
@@ -182,55 +197,113 @@ export class LinksFixosComponent implements OnInit {
     return this.busca.trim().length > 0;
   }
 
-  /** MLB ID válido digitado que ainda não existe na lista — é o que libera o "+ Adicionar". */
-  get mlbIdParaAdicionar(): string | null {
-    const id = this.extrairMlbId(this.busca);
-    if (!id) return null;
-    const existe = this.links.some(l => (l.mlbId ?? '').toUpperCase() === id);
-    return existe ? null : id;
+  /** O texto colado parece um link/ID do ML? Só então vale consultar o backend. */
+  get pareceLinkMl(): boolean {
+    const t = this.busca.trim();
+    return /MLB/i.test(t) || /^\d{8,}$/.test(t) || /mercadolivre\.com/i.test(t);
   }
 
-  limparBusca(): void {
-    this.busca = '';
+  /**
+   * Dispara a análise ao digitar, com um respiro de 500ms.
+   *
+   * Sem o debounce, colar uma URL de 120 caracteres geraria uma chamada por
+   * tecla — e o preview resolve catálogo no ML, então cada chamada custa caro.
+   */
+  aoDigitar(): void {
     this.erroAdicionar = null;
+    if (this.timerPreview) clearTimeout(this.timerPreview);
+
+    const texto = this.busca.trim();
+    if (!texto || !this.pareceLinkMl) {
+      this.preview = null;
+      this.ultimaEntradaAnalisada = null;
+      return;
+    }
+    if (texto === this.ultimaEntradaAnalisada) return;
+
+    this.timerPreview = setTimeout(() => this.analisar(), 500);
   }
 
-  adicionarPorId(): void {
-    const id = this.mlbIdParaAdicionar;
-    if (!id || this.adicionando) return;
+  /** POST /api/links/preview — descobre o que é o link antes de gravar qualquer coisa. */
+  analisar(): void {
+    const entrada = this.busca.trim();
+    if (!entrada || this.analisando) return;
+
+    this.analisando = true;
+    this.erroAdicionar = null;
+    this.ultimaEntradaAnalisada = entrada;
+
+    this.api.preverLink(entrada).subscribe({
+      next: (preview) => {
+        this.analisando = false;
+        this.preview = preview;
+      },
+      error: (e) => {
+        this.analisando = false;
+        this.preview = null;
+        this.erroAdicionar = this.mensagemErroRede(e?.status);
+      }
+    });
+  }
+
+  /** Grava o item que está no card de preview. */
+  confirmarCadastro(): void {
+    if (!this.preview?.utilizavel || this.adicionando) return;
 
     this.adicionando = true;
     this.erroAdicionar = null;
 
-    this.api.adicionarLink(id).subscribe({
+    this.api.adicionarLink(this.preview.entrada, this.linkAfiliadoNovo).subscribe({
       next: (novo) => {
-        // O snapshot (título, preço, foto) fica por conta do bot — daí o recarregamento.
-        if (novo?.id != null) this.links = [novo, ...this.links];
         this.adicionando = false;
+        if (novo?.id != null) this.links = [novo, ...this.links];
+        this.cancelarPreview();
         this.busca = '';
         this.carregar();
       },
       error: (e) => {
         this.adicionando = false;
-        this.erroAdicionar = this.mensagemErroAdicionar(e?.status, id);
+        // O backend manda 'erro' e 'comoResolver'; mostrar os dois é o que
+        // transforma "deu 400" em algo que o usuário consegue resolver sozinho.
+        const corpo = e?.error;
+        this.erroAdicionar = corpo?.erro
+          ? [corpo.erro, corpo.comoResolver].filter(Boolean).join(' ')
+          : this.mensagemErroRede(e?.status);
       }
     });
   }
 
-  private mensagemErroAdicionar(status: number | undefined, id: string): string {
+  cancelarPreview(): void {
+    this.preview = null;
+    this.linkAfiliadoNovo = '';
+    this.ultimaEntradaAnalisada = null;
+  }
+
+  limparBusca(): void {
+    this.busca = '';
+    this.erroAdicionar = null;
+    this.cancelarPreview();
+  }
+
+  /** Rótulo humano para o tipo de ID que o backend detectou. */
+  get rotuloTipo(): string {
+    switch (this.preview?.tipoDetectado) {
+      case 'ITEM': return 'Anúncio';
+      case 'CATALOG_PRODUCT': return 'Ficha de catálogo';
+      case 'USER_PRODUCT': return 'Agrupador do vendedor';
+      default: return 'Não reconhecido';
+    }
+  }
+
+  private mensagemErroRede(status: number | undefined): string {
     switch (status) {
-      case 409:
-        return `${id} já está cadastrado.`;
-      case 400:
-        // O backend pode exigir o link de afiliado junto na criação.
-        return `O bot recusou ${id}. Confira se o ID existe no Mercado Livre.`;
+      case 0:
+        return 'Sem resposta do bot. Verifique se ele está online e a URL configurada.';
       case 404:
       case 405:
-        return `O bot não aceita cadastro manual: POST /api/links não está disponível nesta versão do backend.`;
-      case 0:
-        return `Sem resposta do bot. Verifique se ele está online e a URL configurada.`;
+        return 'Esta versão do backend não tem o cadastro por link (POST /api/links/preview).';
       default:
-        return `Não foi possível adicionar ${id} (erro ${status ?? 'desconhecido'}).`;
+        return `Falha ao falar com o bot (erro ${status ?? 'desconhecido'}).`;
     }
   }
 
@@ -332,10 +405,73 @@ export class LinksFixosComponent implements OnInit {
   }
 
   /**
-   * O backend só expõe endpoints por item, então o lote é um disparo em paralelo:
-   * cada falha é isolada para que os itens que deram certo já sejam aplicados na tela.
+   * Exclusão em lote: uma única chamada ao endpoint DELETE /api/links.
+   *
+   * Antes isto disparava N DELETEs em paralelo — 50 itens viravam 50 requisições
+   * e um estado parcial quando algumas falhavam. O backend já resolve tudo numa
+   * transação e ainda diz quais IDs já não existiam.
+   */
+  private apagarEmLote(ids: number[]): void {
+    if (this.acaoLote) return;
+
+    this.acaoLote = 'deletar';
+    this.mensagemLote = null;
+    this.loteComErro = false;
+    ids.forEach(id => this.pendingIds.add(id));
+
+    this.api.deletarLinks(ids).subscribe({
+      next: (res) => {
+        // 'naoEncontrados' são itens que outra aba já apagou: sumiram da tela
+        // do mesmo jeito, então entram na limpeza junto com os removidos.
+        const foram = new Set([...(res.ids ?? []), ...(res.naoEncontrados ?? [])]);
+        this.links = this.links.filter(l => l.id == null || !foram.has(l.id));
+
+        ids.forEach(id => this.pendingIds.delete(id));
+        foram.forEach(id => this.selecionados.delete(id));
+        this.acaoLote = null;
+        this.loteComErro = false;
+        this.mensagemLote = res.mensagem ?? `${res.removidos} link(s) removido(s).`;
+        setTimeout(() => { this.mensagemLote = null; }, 5000);
+      },
+      error: () => {
+        ids.forEach(id => this.pendingIds.delete(id));
+        this.acaoLote = null;
+        this.avisarLote('Falha ao remover os selecionados. Nada foi apagado.');
+      }
+    });
+  }
+
+  /**
+   * Apaga a tabela inteira. Pede confirmação dupla porque leva junto os links de
+   * afiliado preenchidos na mão — o trabalho manual que não dá para recuperar.
+   */
+  limparTudo(): void {
+    if (this.acaoLote || this.links.length === 0) return;
+    if (!confirm(`Remover TODOS os ${this.links.length} links, incluindo os links de afiliado já preenchidos? Isso não tem volta.`)) return;
+
+    this.acaoLote = 'deletar';
+    this.api.deletarTodosLinks(true).subscribe({
+      next: (res) => {
+        this.links = [];
+        this.limparSelecao();
+        this.acaoLote = null;
+        this.loteComErro = false;
+        this.mensagemLote = res.mensagem ?? `${res.removidos} link(s) removido(s).`;
+        setTimeout(() => { this.mensagemLote = null; }, 5000);
+      },
+      error: () => {
+        this.acaoLote = null;
+        this.avisarLote('Falha ao limpar a lista.');
+      }
+    });
+  }
+
+  /**
+   * Ativar/desativar continuam item a item — o backend não tem endpoint de lote
+   * para eles, e cada falha é isolada para que os que deram certo já apareçam.
    */
   private aplicarLote(ids: number[], acao: AcaoLote): void {
+    if (acao === 'deletar') { this.apagarEmLote(ids); return; }
     if (this.acaoLote) return;
 
     this.acaoLote = acao;
@@ -345,8 +481,7 @@ export class LinksFixosComponent implements OnInit {
 
     const chamar = (id: number): Observable<any> => {
       if (acao === 'ativar') return this.api.ativarLink(id);
-      if (acao === 'desativar') return this.api.desativarLink(id);
-      return this.api.deletarLink(id);
+      return this.api.desativarLink(id);
     };
 
     forkJoin(
@@ -358,14 +493,9 @@ export class LinksFixosComponent implements OnInit {
       const sucessos = resultados.filter(r => r.ok);
       const falhas = resultados.length - sucessos.length;
 
-      if (acao === 'deletar') {
-        const removidos = new Set(sucessos.map(r => r.id));
-        this.links = this.links.filter(l => l.id == null || !removidos.has(l.id));
-      } else {
-        for (const r of sucessos) {
-          const idx = this.links.findIndex(l => l.id === r.id);
-          if (idx !== -1 && r.resposta) this.links[idx] = r.resposta as LinkFixo;
-        }
+      for (const r of sucessos) {
+        const idx = this.links.findIndex(l => l.id === r.id);
+        if (idx !== -1 && r.resposta) this.links[idx] = r.resposta as LinkFixo;
       }
 
       ids.forEach(id => this.pendingIds.delete(id));

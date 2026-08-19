@@ -9,6 +9,7 @@ import { ConfigModalComponent } from '../../components/config-modal/config-modal
 import { LinksFixosComponent } from '../../components/links-fixos/links-fixos.component';
 import { WhatsappCardComponent } from '../../components/whatsapp-card/whatsapp-card.component';
 import { MlAuthCardComponent } from '../../components/ml-auth-card/ml-auth-card.component';
+import { MlDiagnosticoComponent } from '../../components/ml-diagnostico/ml-diagnostico.component';
 import { BotApiService } from '../../services/bot-api.service';
 
 @Component({
@@ -24,6 +25,7 @@ import { BotApiService } from '../../services/bot-api.service';
     LinksFixosComponent,
     WhatsappCardComponent,
     MlAuthCardComponent,
+    MlDiagnosticoComponent,
     ConfigModalComponent
   ],
   templateUrl: './dashboard.page.html',

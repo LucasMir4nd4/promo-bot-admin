@@ -1,0 +1,156 @@
+.diag-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.card-title .icon { font-size: 16px; }
+
+.count-badge {
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.exec-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.exec-btn:hover:not(:disabled) { background: var(--accent); color: var(--bg-primary); }
+.exec-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.exec-btn .btn-content { display: inline-flex; align-items: center; gap: 6px; }
+
+.spinner {
+  width: 11px; height: 11px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: girar 700ms linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.diag-intro {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.diag-erro {
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--red-dim);
+  color: var(--red);
+  font-size: 12px;
+}
+
+/* Uma linha por endpoint: status, nome, caminho e código HTTP */
+.diag-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--green);
+  background: var(--bg-secondary);
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.diag-linha.falhou { border-left-color: var(--red); }
+.diag-linha.clicavel { cursor: pointer; transition: var(--transition); }
+.diag-linha.clicavel:hover { background: var(--bg-card-hover); }
+
+.diag-status { color: var(--green); font-weight: 700; }
+.diag-linha.falhou .diag-status { color: var(--red); }
+
+.diag-nome {
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: capitalize;
+  min-width: 84px;
+}
+
+.diag-endpoint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.diag-detalhe { color: var(--text-secondary); font-size: 11px; }
+
+.diag-http { color: var(--green); font-weight: 700; }
+.diag-http.ruim { color: var(--red); }
+
+.diag-detalhe-box {
+  margin: -2px 0 8px 12px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+}
+
+.diag-para-que { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+.diag-causa { font-size: 12px; line-height: 1.45; color: var(--orange); margin-bottom: 8px; }
+
+.diag-resposta {
+  margin: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.4;
+  max-height: 140px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diag-politica,
+.diag-conta,
+.diag-conclusao {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.diag-politica { background: var(--orange-dim); color: var(--orange); }
+.diag-conta { background: var(--bg-secondary); color: var(--text-secondary); }
+.diag-conclusao { background: var(--accent-dim); color: var(--accent); font-weight: 500; }

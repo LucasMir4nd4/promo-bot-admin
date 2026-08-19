@@ -54,6 +54,73 @@ export interface LinkFixo {
   categoria?: string;
 }
 
+/** Espelha o ProdutoDTO do backend — o snapshot que o ML devolve para um anúncio. */
+export interface ProdutoMl {
+  asin: string;
+  titulo?: string;
+  precoAtual?: number;
+  precoOriginal?: number;
+  percentualDesconto?: number;
+  urlImagem?: string;
+  urlProduto?: string;
+  urlAfiliado?: string;
+  categoria?: string;
+  fonte?: string;
+}
+
+/** Os tipos de ID que o Mercado Livre usa. Só ITEM é publicável direto. */
+export type TipoIdMl = 'ITEM' | 'CATALOG_PRODUCT' | 'USER_PRODUCT' | 'DESCONHECIDO';
+
+/**
+ * Resposta de POST /api/links/preview — o que o bot entendeu do link colado,
+ * antes de gravar. É o que alimenta o card de confirmação da tela.
+ */
+export interface LinkPreview {
+  /** Único campo que libera o botão de confirmar. */
+  utilizavel: boolean;
+  entrada: string;
+  tipoDetectado: TipoIdMl;
+  /** O ID como veio na URL — pode ser o do catálogo. */
+  idDetectado?: string | null;
+  /** O ID do anúncio já resolvido. É este que vai para o banco. */
+  mlbId?: string | null;
+  resolvidoDeCatalogo: boolean;
+  jaCadastrado: boolean;
+  jaPublicado: boolean;
+  produto?: ProdutoMl | null;
+  /** OK | SEM_SNAPSHOT | ID_INVALIDO | ID_DE_CATALOGO | CATALOGO_SEM_VENCEDOR | JA_NA_FILA | JA_PUBLICADO */
+  motivo: string;
+  mensagem: string;
+  comoResolver?: string | null;
+}
+
+/** Resposta de DELETE /api/links (exclusão em lote). */
+export interface ExclusaoLoteResposta {
+  removidos: number;
+  ids: number[];
+  naoEncontrados: number[];
+  mensagem: string;
+}
+
+/** Um endpoint sondado por GET /api/mercadolivre/diagnostico. */
+export interface TesteDiagnostico {
+  nome: string;
+  endpoint: string;
+  paraQueServe: string;
+  ok: boolean;
+  status: number;
+  amostra?: string;
+  resposta?: string;
+  causaProvavel?: string;
+}
+
+export interface DiagnosticoMl {
+  token: { ok: boolean; mensagem?: string; erro?: string; comoResolver?: string };
+  testes?: TesteDiagnostico[];
+  conta?: { identificada: boolean; pareceVendedor?: boolean; observacao: string };
+  conclusao: string;
+}
+
 export interface MlAuthLoginResponse {
   urlAutorizacao: string;
   state: string;
@@ -173,9 +240,27 @@ export class BotApiService {
       .pipe(catchError(this.handleError));
   }
 
-  // POST /api/links — cadastra um link fixo manualmente pelo MLB ID
-  adicionarLink(mlbId: string, linkAfiliado?: string): Observable<LinkFixo> {
-    const body: Partial<LinkFixo> = { mlbId };
+  /**
+   * POST /api/links/preview — analisa o link SEM gravar nada.
+   *
+   * Passo 1 do cadastro por URL: devolve o tipo do ID, o anúncio já resolvido
+   * (quando a URL era de catálogo) e o snapshot, para a tela mostrar um card de
+   * confirmação. Uma entrada inválida volta 200 com utilizavel: false — não é
+   * erro de HTTP, é o resultado normal da análise.
+   */
+  preverLink(entrada: string): Observable<LinkPreview> {
+    return this.http.post<LinkPreview>(`${this._baseUrl()}/api/links/preview`, { entrada })
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * POST /api/links — cadastra a partir de uma URL colada ou de um ID.
+   *
+   * Aceita URL de anúncio, URL de catálogo (/p/MLB…, resolvida no backend) e o
+   * ID cru. Com linkAfiliado o item já nasce ATIVO e pula a revisão manual.
+   */
+  adicionarLink(entrada: string, linkAfiliado?: string): Observable<LinkFixo> {
+    const body: { entrada: string; linkAfiliado?: string } = { entrada };
     if (linkAfiliado?.trim()) body.linkAfiliado = linkAfiliado.trim();
 
     return this.http.post<LinkFixo>(`${this._baseUrl()}/api/links`, body)
@@ -203,6 +288,37 @@ export class BotApiService {
   // DELETE /api/links/{id}
   deletarLink(id: number): Observable<{ mensagem: string }> {
     return this.http.delete<{ mensagem: string }>(`${this._baseUrl()}/api/links/${id}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * DELETE /api/links — apaga vários de uma vez.
+   *
+   * Uma chamada só em vez de N em paralelo: o backend resolve tudo numa
+   * transação e ainda informa quais IDs já não existiam ('naoEncontrados'),
+   * o que deixa a tela se reconciliar sem tratar 404 item a item.
+   */
+  deletarLinks(ids: number[]): Observable<ExclusaoLoteResposta> {
+    return this.http.delete<ExclusaoLoteResposta>(`${this._baseUrl()}/api/links`, { body: { ids } })
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * DELETE /api/links/todos?confirmar=true — limpa a tabela inteira.
+   * Sem confirmar=true o backend devolve 400 com a contagem, como prévia.
+   */
+  deletarTodosLinks(confirmar = true): Observable<{ removidos: number; mensagem: string }> {
+    return this.http.delete<{ removidos: number; mensagem: string }>(
+      `${this._baseUrl()}/api/links/todos`, { params: new HttpParams().set('confirmar', String(confirmar)) }
+    ).pipe(catchError(this.handleError));
+  }
+
+  /**
+   * GET /api/mercadolivre/diagnostico — sonda cada endpoint do ML que o bot usa.
+   * Serve para separar "token quebrado" de "aplicação bloqueada por política do ML".
+   */
+  diagnosticarMl(): Observable<DiagnosticoMl> {
+    return this.http.get<DiagnosticoMl>(`${this._baseUrl()}/api/mercadolivre/diagnostico`)
       .pipe(catchError(this.handleError));
   }
 

@@ -1,0 +1,78 @@
+<div class="diag-card fade-in">
+
+  <div class="card-header">
+    <div class="card-title">
+      <span class="icon">🩺</span>
+      <span>Diagnóstico Mercado Livre</span>
+      <span class="count-badge" *ngIf="resultado">
+        {{ testes.length - falhas }}/{{ testes.length }} ok
+      </span>
+    </div>
+
+    <button
+      class="exec-btn"
+      [ngClass]="estado"
+      (click)="executar()"
+      [disabled]="estado === 'loading'">
+      <span *ngIf="estado !== 'loading'" class="btn-content">▶ TESTAR</span>
+      <span *ngIf="estado === 'loading'" class="btn-content">
+        <span class="spinner"></span> TESTANDO...
+      </span>
+    </button>
+  </div>
+
+  <p class="diag-intro" *ngIf="!resultado && estado !== 'loading'">
+    Bate em cada endpoint do ML que o bot usa e mostra qual respondeu. Serve para
+    separar “token vencido” de “aplicação bloqueada pelo Mercado Livre”.
+  </p>
+
+  <div class="diag-erro" *ngIf="erro">⚠ {{ erro }}</div>
+
+  <ng-container *ngIf="resultado">
+
+    <!-- Token: se ele falha, nada mais é confiável -->
+    <div class="diag-linha" [class.falhou]="!resultado.token.ok">
+      <span class="diag-status">{{ resultado.token.ok ? '✓' : '✗' }}</span>
+      <span class="diag-nome">Token OAuth</span>
+      <span class="diag-detalhe">{{ resultado.token.mensagem || resultado.token.erro }}</span>
+    </div>
+    <div class="diag-resolver" *ngIf="resultado.token.comoResolver">
+      💡 {{ resultado.token.comoResolver }}
+    </div>
+
+    <!-- Endpoints -->
+    <div
+      class="diag-linha clicavel"
+      *ngFor="let t of testes; trackBy: trackByNome"
+      [class.falhou]="!t.ok"
+      (click)="alternarDetalhe(t.nome)">
+      <span class="diag-status">{{ t.ok ? '✓' : '✗' }}</span>
+      <span class="diag-nome">{{ t.nome }}</span>
+      <span class="diag-endpoint mono">{{ t.endpoint }}</span>
+      <span class="diag-http mono" [class.ruim]="!t.ok">{{ t.status }}</span>
+    </div>
+
+    <ng-container *ngFor="let t of testes; trackBy: trackByNome">
+      <div class="diag-detalhe-box" *ngIf="estaExpandido(t.nome)">
+        <div class="diag-para-que">{{ t.paraQueServe }}</div>
+        <div class="diag-causa" *ngIf="t.causaProvavel">⚠ {{ t.causaProvavel }}</div>
+        <pre class="diag-resposta mono" *ngIf="t.resposta || t.amostra">{{ t.resposta || t.amostra }}</pre>
+      </div>
+    </ng-container>
+
+    <!-- Bloqueio por política merece destaque: não é problema do usuário -->
+    <div class="diag-politica" *ngIf="bloqueadoPorPolitica">
+      <strong>Bloqueio de política do Mercado Livre.</strong>
+      Um ou mais endpoints de catálogo foram recusados pelo PolicyAgent, mesmo com
+      token válido. Trocar de conta ou virar vendedor normalmente não resolve —
+      é preciso pedir habilitação ao suporte de desenvolvedores do ML. Enquanto
+      isso, o cadastro por link continua funcionando normalmente.
+    </div>
+
+    <div class="diag-conta" *ngIf="resultado.conta">
+      <strong>Conta:</strong> {{ resultado.conta.observacao }}
+    </div>
+
+    <div class="diag-conclusao">{{ resultado.conclusao }}</div>
+  </ng-container>
+</div>
