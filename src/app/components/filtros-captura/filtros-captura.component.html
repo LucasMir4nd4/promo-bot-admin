@@ -1,0 +1,175 @@
+<div class="executar-card fade-in fade-in-3">
+
+  <!-- Header -->
+  <div class="card-header">
+    <div class="card-title">
+      <span class="icon">🎯</span>
+      <span>O que o bot busca</span>
+    </div>
+    <div class="header-acoes">
+      <button class="link-btn" (click)="carregar(true)" [disabled]="estado === 'loading'"
+              title="Ignora o cache de 6h e consulta as APIs de novo">
+        recarregar catálogo
+      </button>
+    </div>
+  </div>
+
+  <p class="card-desc">
+    Categorias e palavras-chave que a captura de promoções varre. As categorias vêm
+    do catálogo do próprio marketplace — o que você marca aqui vale no próximo ciclo,
+    sem editar arquivo nem reiniciar o bot.
+  </p>
+
+  <!-- Abas -->
+  <div class="abas">
+    <button class="aba" [class.ativa]="aba === 'ML_CATEGORIAS'" (click)="trocarAba('ML_CATEGORIAS')">
+      Mercado Livre
+      <span class="aba-badge mono" *ngIf="marcadasMl">{{ marcadasMl }}</span>
+    </button>
+    <button class="aba" [class.ativa]="aba === 'ALI_CATEGORIAS'" (click)="trocarAba('ALI_CATEGORIAS')">
+      AliExpress · categorias
+      <span class="aba-badge mono" *ngIf="marcadasAli">{{ marcadasAli }}</span>
+    </button>
+    <button class="aba" [class.ativa]="aba === 'ALI_PALAVRAS'" (click)="trocarAba('ALI_PALAVRAS')">
+      AliExpress · palavras-chave
+      <span class="aba-badge mono" *ngIf="palavras.length">{{ palavras.length }}</span>
+    </button>
+  </div>
+
+  <!-- Aviso do backend quando o catálogo volta vazio -->
+  <div class="aviso" *ngIf="avisoDaAba">{{ avisoDaAba }}</div>
+
+  <!-- Carregando -->
+  <div class="carregando" *ngIf="estado === 'loading'">
+    <span class="spinner"></span> carregando…
+  </div>
+
+  <!-- ── Abas de categorias ────────────────────────────────────────────── -->
+  <ng-container *ngIf="estado !== 'loading' && aba !== 'ALI_PALAVRAS'">
+
+    <div class="barra-lista">
+      <input
+        class="campo busca"
+        type="text"
+        [(ngModel)]="busca"
+        placeholder="filtrar por nome ou ID…" />
+
+      <label class="check-sub" *ngIf="aba === 'ALI_CATEGORIAS'">
+        <input type="checkbox" [checked]="incluirSubcategorias" (change)="alternarSubcategorias()" />
+        subcategorias
+      </label>
+
+      <span class="contador mono">{{ selecionadasDaAba }} marcada(s)</span>
+    </div>
+
+    <div class="categorias-grid" *ngIf="linhasDaAba.length; else semCategorias">
+      <button
+        type="button"
+        class="categoria-item"
+        *ngFor="let c of linhasDaAba"
+        [class.marcada]="c.selecionada"
+        [class.desligada]="c.selecionada && !c.ativo"
+        (click)="alternarCategoria(c)"
+        [title]="c.foraDoCatalogo ? 'Salva, mas fora do catálogo mostrado agora' : c.id">
+        <span class="marca">{{ c.selecionada ? '✓' : '' }}</span>
+        <span class="categoria-id mono">{{ c.id }}</span>
+        <span class="categoria-nome">{{ c.nome }}</span>
+        <span class="tag mono" *ngIf="c.parentId">sub</span>
+        <span class="tag mono alerta" *ngIf="c.foraDoCatalogo">?</span>
+        <span class="tag mono desl" *ngIf="c.selecionada && !c.ativo">off</span>
+      </button>
+    </div>
+
+    <ng-template #semCategorias>
+      <div class="vazio">
+        Nenhuma categoria para mostrar. Use "recarregar catálogo" se o marketplace
+        acabou de voltar a responder.
+      </div>
+    </ng-template>
+
+  </ng-container>
+
+  <!-- ── Aba de palavras-chave ─────────────────────────────────────────── -->
+  <ng-container *ngIf="estado !== 'loading' && aba === 'ALI_PALAVRAS'">
+
+    <div class="barra-lista">
+      <input
+        class="campo"
+        type="text"
+        [(ngModel)]="novaPalavra"
+        (keyup.enter)="adicionarPalavra()"
+        placeholder="nova palavra-chave (ex: ssd nvme)" />
+      <button class="btn-secundario" (click)="adicionarPalavra()" [disabled]="!novaPalavra.trim()">
+        + adicionar
+      </button>
+    </div>
+
+    <div class="palavras" *ngIf="palavras.length; else semPalavras">
+      <div class="palavra" *ngFor="let p of palavras; let i = index" [class.desligada]="!p.ativo">
+        <button type="button" class="palavra-texto" (click)="alternarPalavra(p)"
+                [title]="p.ativo ? 'Clique para desligar sem apagar' : 'Clique para ligar de novo'">
+          <span class="marca">{{ p.ativo ? '✓' : '·' }}</span>
+          {{ p.valor }}
+        </button>
+        <button type="button" class="palavra-x" (click)="removerPalavra(i)" title="Apagar">✕</button>
+      </div>
+    </div>
+
+    <ng-template #semPalavras>
+      <div class="vazio">
+        Nenhuma palavra-chave. Sem ao menos uma (ou uma categoria marcada), o ciclo
+        do AliExpress não busca nada.
+      </div>
+    </ng-template>
+
+  </ng-container>
+
+  <!-- Ações -->
+  <div class="acoes" *ngIf="estado !== 'loading'">
+    <button
+      class="executar-btn salvar"
+      (click)="salvar()"
+      [disabled]="salvando || !alterado[aba]">
+      <span class="btn-content">
+        <span class="spinner" *ngIf="salvando"></span>
+        <span class="btn-icon" *ngIf="!salvando">💾</span>
+        {{ salvando ? 'SALVANDO...' : (alterado[aba] ? 'SALVAR ' + (aba === 'ALI_PALAVRAS' ? 'PALAVRAS' : 'SELEÇÃO') : 'SEM ALTERAÇÕES') }}
+      </span>
+    </button>
+
+    <button
+      class="executar-btn idle"
+      (click)="capturar(aba === 'ML_CATEGORIAS' ? 'MERCADO_LIVRE' : 'ALIEXPRESS')"
+      [disabled]="capturando">
+      <span class="btn-content">
+        <span class="spinner" *ngIf="capturando"></span>
+        <span class="btn-icon" *ngIf="!capturando">🚀</span>
+        {{ capturando ? 'DISPARANDO...' : 'CAPTURAR ' + (aba === 'ML_CATEGORIAS' ? 'MERCADO LIVRE' : 'ALIEXPRESS') }}
+      </span>
+    </button>
+  </div>
+
+  <p class="nota" *ngIf="estado !== 'loading'">
+    <strong>Mercado Livre</strong> só enfileira — a promoção sai quando o worker gera o
+    link de afiliado. <strong>AliExpress</strong> publica na hora, o link já vem pronto da API.
+  </p>
+
+  <!-- Feedback -->
+  <div class="resultado" *ngIf="mensagem">
+    <div class="resultado-msg" [ngClass]="mensagemErro ? 'error' : 'success'">
+      {{ mensagem }}
+    </div>
+  </div>
+
+  <!-- Terminal de logs -->
+  <div class="log-terminal" *ngIf="logs.length > 0">
+    <div class="log-header">
+      <span class="mono">LOG</span>
+      <button class="clear-btn" (click)="limparLogs()">limpar</button>
+    </div>
+    <div class="log-body">
+      <div class="log-line" *ngFor="let log of logs">{{ log }}</div>
+    </div>
+  </div>
+
+</div>

@@ -42,30 +42,34 @@
         {{ modoSelecao ? '✕ Cancelar' : '☑ Selecionar' }}
       </button>
 
-      <button class="refresh-btn" (click)="carregar()" [disabled]="loading" title="Atualizar">
+      <button class="refresh-btn" (click)="carregar(); carregarFila()" [disabled]="loading" title="Atualizar">
         <span [class.spinning]="loading">↻</span>
-      </button>
-
-      <button
-        class="exec-btn"
-        [ngClass]="estadoExec"
-        (click)="executarLinksFixos()"
-        [disabled]="estadoExec === 'loading'">
-        <span *ngIf="estadoExec === 'idle'" class="btn-content">
-          <span>▶</span> EXECUTAR
-        </span>
-        <span *ngIf="estadoExec === 'loading'" class="btn-content">
-          <span class="spinner"></span> ENVIANDO...
-        </span>
-        <span *ngIf="estadoExec === 'success'" class="btn-content">✓ ENVIADO</span>
-        <span *ngIf="estadoExec === 'error'" class="btn-content">✗ ERRO</span>
       </button>
     </div>
   </div>
 
-  <!-- Feedback exec -->
-  <div class="exec-feedback" *ngIf="mensagemExec" [ngClass]="estadoExec">
-    {{ mensagemExec }}
+  <!-- Fila de ofertas: capturadas pelo bot, ainda sem link de afiliado.
+       Vive na memória do backend, por isso não entra na lista de links. -->
+  <div class="fila-bloco" *ngIf="!filaIndisponivel && (fila.length > 0 || filaCarregando)">
+    <div class="fila-topo">
+      <span class="fila-titulo">⏳ Ofertas na fila</span>
+      <span class="count-badge">{{ fila.length }}</span>
+      <span class="fila-dica">aguardando o link de afiliado do “Compartilhar”</span>
+      <button class="refresh-btn" (click)="carregarFila()" [disabled]="filaCarregando" title="Atualizar a fila">
+        <span [class.spinning]="filaCarregando">↻</span>
+      </button>
+    </div>
+
+    <div class="fila-itens">
+      <div class="fila-item" *ngFor="let oferta of fila">
+        <span class="mlb mono">{{ oferta.mlbId }}</span>
+        <a class="fila-link" *ngIf="oferta.urlProduto" [href]="oferta.urlProduto" target="_blank"
+           title="{{ oferta.urlProduto }}">⬈ abrir anúncio</a>
+        <button class="mini-btn" (click)="usarOferta(oferta)" title="Colar o link compartilhado deste anúncio">
+          📤 usar
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Busca na lista + cadastro por link do Mercado Livre -->
@@ -138,17 +142,70 @@
       <div class="preview-acoes" *ngIf="preview.utilizavel">
         <input
           class="field field-afiliado"
-          placeholder="Link de afiliado (opcional) — se preencher, já entra ativo"
+          placeholder="Link de afiliado — https://meli.la/… (obrigatório)"
           [(ngModel)]="linkAfiliadoNovo"
           (keydown.enter)="confirmarCadastro()" />
 
         <button
           class="add-btn"
           (click)="confirmarCadastro()"
-          [disabled]="adicionando">
+          [disabled]="adicionando || !podeCadastrar"
+          [title]="podeCadastrar ? '' : 'Sem link de afiliado o item ficaria inativo para sempre'">
           <span *ngIf="!adicionando">+ Cadastrar {{ preview.mlbId }}</span>
           <span *ngIf="adicionando" class="spinner-sm"></span>
         </button>
+      </div>
+    </div>
+
+    <!-- Link vindo do botão Compartilhar do anúncio: link curto + URL da aba -->
+    <div class="form-row compartilhar-linha">
+      <button
+        class="compartilhar-toggle"
+        [class.ativa]="compartilharAberto"
+        (click)="alternarCompartilhar()">
+        {{ compartilharAberto ? '✕ Fechar' : '📤 Colar link compartilhado' }}
+      </button>
+      <span class="compartilhar-dica" *ngIf="!compartilharAberto">
+        Copiou o link no “Compartilhar” do anúncio? Cole aqui com a URL da página e publique na hora.
+      </span>
+    </div>
+
+    <div class="compartilhar-card" *ngIf="compartilharAberto">
+      <input
+        class="field field-link"
+        placeholder="Link de afiliado — https://meli.la/…"
+        [(ngModel)]="compLinkAfiliado"
+        [disabled]="compEnviando"
+        (keydown.enter)="registrarCompartilhado()" />
+
+      <input
+        class="field field-link"
+        placeholder="URL da página do produto — a aba que estava aberta"
+        [(ngModel)]="compPaginaProduto"
+        [disabled]="compEnviando"
+        (keydown.enter)="registrarCompartilhado()" />
+
+      <div class="compartilhar-acoes">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            class="checkbox"
+            [(ngModel)]="compPublicar"
+            [disabled]="compEnviando" />
+          <span>Publicar agora</span>
+        </label>
+
+        <button
+          class="add-btn"
+          (click)="registrarCompartilhado()"
+          [disabled]="compEnviando || !compPronto">
+          <span *ngIf="!compEnviando">{{ compPublicar ? '🚀 Registrar e publicar' : '+ Só registrar' }}</span>
+          <span *ngIf="compEnviando" class="spinner-sm"></span>
+        </button>
+      </div>
+
+      <div class="compartilhar-msg" [class.erro]="compComErro" *ngIf="compMensagem">
+        {{ compComErro ? '⚠' : '✓' }} {{ compMensagem }}
       </div>
     </div>
 
@@ -170,22 +227,6 @@
     <span class="selecao-contagem mono">{{ totalSelecionados }} selecionado(s)</span>
 
     <div class="selecao-acoes">
-      <button
-        class="lote-btn ativar"
-        (click)="ativarSelecionados()"
-        [disabled]="totalSelecionados === 0 || !!acaoLote">
-        <span *ngIf="acaoLote === 'ativar'" class="spinner-sm"></span>
-        Ativar
-      </button>
-
-      <button
-        class="lote-btn desativar"
-        (click)="desativarSelecionados()"
-        [disabled]="totalSelecionados === 0 || !!acaoLote">
-        <span *ngIf="acaoLote === 'desativar'" class="spinner-sm"></span>
-        Desativar
-      </button>
-
       <button
         class="lote-btn excluir"
         (click)="deletarSelecionados()"
@@ -229,7 +270,7 @@
   <!-- Empty -->
   <div class="empty-state" *ngIf="!loading && !erro && links.length === 0 && !buscando">
     <span class="empty-icon">🔗</span>
-    <span class="empty-text">Nenhum item capturado ainda</span>
+    <span class="empty-text">Nenhum link de afiliado registrado ainda</span>
   </div>
 
   <!-- Busca sem resultado: é aqui que o cadastro manual é oferecido -->
@@ -261,8 +302,7 @@
     <div
       class="produto-card"
       *ngFor="let link of linksFiltrados; trackBy: trackById"
-      [class.inativo]="!link.ativo && !isPendente(link)"
-      [class.pendente]="isPendente(link)"
+      [class.inativo]="!link.ativo"
       [class.selecionado]="modoSelecao && isSelecionado(link)">
 
       <!-- Foto -->
@@ -293,8 +333,8 @@
           -{{ link.percentualDesconto }}%
         </span>
 
-        <span class="status-selo" [ngClass]="isPendente(link) ? 'pend' : (link.ativo ? 'on' : 'off')">
-          {{ isPendente(link) ? 'Pendente' : (link.ativo ? 'Ativo' : 'Inativo') }}
+        <span class="status-selo" [ngClass]="link.ativo ? 'on' : 'off'">
+          {{ link.ativo ? 'Ativo' : 'Inativo' }}
         </span>
       </div>
 
@@ -326,50 +366,22 @@
 
       <!-- Link de afiliado -->
       <div class="card-afiliado">
-        <div class="afiliado-input" *ngIf="isPendente(link); else linkProntoCard">
-          <input
-            class="field field-link"
-            placeholder="Cole o link de afiliado"
-            [(ngModel)]="rascunhoAfiliado[link.id!]"
-            (keydown.enter)="definirAfiliado(link)"
-            [disabled]="isPending(link)"
-          />
-          <button
-            class="add-btn"
-            (click)="definirAfiliado(link)"
-            [disabled]="!rascunhoAfiliado[link.id!]?.trim() || isPending(link)">
-            <span *ngIf="!isPending(link)">Salvar</span>
-            <span *ngIf="isPending(link)" class="spinner-sm"></span>
+        <div class="link-pronto">
+          <a [href]="link.linkAfiliado" target="_blank" class="link-text" title="{{ link.linkAfiliado }}">
+            {{ link.linkAfiliado }}
+          </a>
+          <button class="mini-btn" (click)="copiarLink(link)" title="Copiar link de afiliado">
+            {{ linkCopiado === link.id ? '✓' : '⧉' }}
           </button>
         </div>
-
-        <ng-template #linkProntoCard>
-          <div class="link-pronto">
-            <a [href]="link.linkAfiliado" target="_blank" class="link-text" title="{{ link.linkAfiliado }}">
-              {{ link.linkAfiliado }}
-            </a>
-            <button class="mini-btn" (click)="copiarLink(link)" title="Copiar link de afiliado">
-              {{ linkCopiado === link.id ? '✓' : '⧉' }}
-            </button>
-          </div>
-        </ng-template>
       </div>
 
       <!-- Ações -->
       <div class="card-acoes">
-        <button
-          *ngIf="!isPendente(link)"
-          class="toggle-btn"
-          [class.ativo]="link.ativo"
-          [class.inativo-btn]="!link.ativo"
-          (click)="toggleAtivo(link)"
-          [disabled]="isPending(link)"
-          [title]="link.ativo ? 'Desativar' : 'Ativar'">
+        <span class="status-estatico" [class.ativo]="link.ativo">
           <span class="status-dot"></span>
           {{ link.ativo ? 'Ativo' : 'Inativo' }}
-        </button>
-
-        <span class="aguardando mono" *ngIf="isPendente(link)">aguardando link</span>
+        </span>
 
         <button
           class="delete-btn"
@@ -409,8 +421,7 @@
         <tr
           *ngFor="let link of linksFiltrados; trackBy: trackById"
           class="table-row"
-          [class.inativo]="!link.ativo && !isPendente(link)"
-          [class.pendente]="isPendente(link)"
+          [class.inativo]="!link.ativo"
           [class.selecionado]="modoSelecao && isSelecionado(link)">
 
           <td class="col-check" *ngIf="modoSelecao">
@@ -469,45 +480,21 @@
           <td class="col-mlb mono">{{ link.mlbId }}</td>
 
           <td class="col-link">
-            <!-- Pendente: input inline pra preencher o link de afiliado -->
-            <div class="afiliado-input" *ngIf="isPendente(link); else linkPronto">
-              <input
-                class="field field-link"
-                placeholder="Cole o link de afiliado"
-                [(ngModel)]="rascunhoAfiliado[link.id!]"
-                (keydown.enter)="definirAfiliado(link)"
-                [disabled]="isPending(link)"
-              />
-              <button
-                class="add-btn"
-                (click)="definirAfiliado(link)"
-                [disabled]="!rascunhoAfiliado[link.id!]?.trim() || isPending(link)">
-                <span *ngIf="!isPending(link)">Salvar</span>
-                <span *ngIf="isPending(link)" class="spinner-sm"></span>
-              </button>
-            </div>
-            <ng-template #linkPronto>
+            <div class="link-pronto">
               <a [href]="link.linkAfiliado" target="_blank" class="link-text" title="{{ link.linkAfiliado }}">
                 {{ link.linkAfiliado }}
               </a>
-            </ng-template>
+              <button class="mini-btn" (click)="copiarLink(link)" title="Copiar link de afiliado">
+                {{ linkCopiado === link.id ? '✓' : '⧉' }}
+              </button>
+            </div>
           </td>
 
           <td class="col-status">
-            <span class="pendente-badge" *ngIf="isPendente(link)">
-              <span class="status-dot"></span> Pendente
-            </span>
-            <button
-              *ngIf="!isPendente(link)"
-              class="toggle-btn"
-              [class.ativo]="link.ativo"
-              [class.inativo-btn]="!link.ativo"
-              (click)="toggleAtivo(link)"
-              [disabled]="isPending(link)"
-              [title]="link.ativo ? 'Desativar' : 'Ativar'">
+            <span class="status-estatico" [class.ativo]="link.ativo">
               <span class="status-dot"></span>
               {{ link.ativo ? 'Ativo' : 'Inativo' }}
-            </button>
+            </span>
           </td>
 
           <td class="col-actions">

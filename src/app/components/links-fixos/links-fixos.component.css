@@ -214,54 +214,64 @@
 /* Coluna de seleção na tabela */
 .th-check, .col-check { width: 1%; text-align: center; }
 
-/* Botão executar no header */
-.exec-btn {
-  padding: 6px 14px;
+/* Fila de ofertas em memória: capturadas, ainda sem link de afiliado */
+.fila-bloco {
+  background: rgba(255, 193, 7, 0.05);
+  border: 1px solid rgba(255, 193, 7, 0.25);
   border-radius: var(--radius-sm);
-  border: none;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  transition: all var(--transition);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.exec-btn.idle {
-  background: linear-gradient(135deg, #006b8f, var(--accent));
-  color: #050c1a;
-  box-shadow: 0 2px 12px rgba(0, 212, 255, 0.3);
-}
-
-.exec-btn.idle:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 18px rgba(0, 212, 255, 0.45);
-}
-
-.exec-btn.loading {
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-  cursor: not-allowed;
-}
-
-.exec-btn.success {
-  background: var(--green-dim);
-  color: var(--green);
-  border: 1px solid rgba(0, 230, 118, 0.3);
-}
-
-.exec-btn.error {
-  background: var(--red-dim);
-  color: var(--red);
-  border: 1px solid rgba(255, 71, 87, 0.3);
-}
-
-.btn-content {
+.fila-topo {
   display: flex;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fila-titulo {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffc107;
+}
+
+.fila-dica {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.fila-itens {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
+
+.fila-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+}
+
+.fila-item .mlb {
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.fila-link {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.fila-link:hover { color: var(--accent); }
 
 /* Feedback exec */
 .exec-feedback {
@@ -482,8 +492,6 @@ th {
 .table-row:last-child { border-bottom: none; }
 .table-row:hover { background: var(--bg-card-hover); }
 .table-row.inativo { opacity: 0.5; }
-.table-row.pendente { background: rgba(255, 193, 7, 0.04); }
-
 /* ===== VISÃO EM QUADROS ===== */
 .grade {
   display: grid;
@@ -508,8 +516,6 @@ th {
 }
 
 .produto-card.inativo { opacity: 0.55; }
-.produto-card.pendente { border-color: rgba(255, 193, 7, 0.35); }
-
 /* Foto do card */
 .card-foto {
   position: relative;
@@ -574,12 +580,6 @@ th {
   background: rgba(255, 71, 87, 0.15);
   color: #d32f3d;
   border: 1px solid rgba(255, 71, 87, 0.4);
-}
-
-.status-selo.pend {
-  background: rgba(255, 193, 7, 0.18);
-  color: #a37a00;
-  border: 1px solid rgba(255, 193, 7, 0.45);
 }
 
 /* Corpo do card */
@@ -654,10 +654,6 @@ a.card-titulo:hover { color: var(--accent); }
 }
 
 /* No card o input não cabe lado a lado com o botão — deixa quebrar. */
-.card-afiliado .afiliado-input { flex-wrap: wrap; gap: 5px; }
-.card-afiliado .field-link { flex: 1 1 100%; min-width: 0; padding: 6px 9px; font-size: 11px; }
-.card-afiliado .add-btn { padding: 5px 12px; font-size: 11px; }
-
 .link-pronto {
   display: flex;
   align-items: center;
@@ -705,10 +701,7 @@ a.card-titulo:hover { color: var(--accent); }
   background: var(--bg-card);
 }
 
-.card-acoes .toggle-btn { padding: 3px 8px; font-size: 10px; }
 .card-acoes .delete-btn { width: 22px; height: 22px; font-size: 11px; }
-
-.aguardando { font-size: 9px; color: #ffc107; }
 
 /* Alternador de visão */
 .visao-switch {
@@ -867,28 +860,6 @@ a.produto-titulo:hover { color: var(--accent); text-decoration: underline; }
 .produto-meta .desconto { color: var(--red); font-size: 11px; font-weight: 600; }
 
 /* Input inline de afiliado (pendentes) */
-.afiliado-input {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-/* Badge pendente */
-.pendente-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  background: rgba(255, 193, 7, 0.1);
-  color: #ffc107;
-  border: 1px solid rgba(255, 193, 7, 0.25);
-  white-space: nowrap;
-}
-
 td { padding: 11px 14px; vertical-align: middle; }
 
 /* Colunas */
@@ -916,46 +887,31 @@ td { padding: 11px 14px; vertical-align: middle; }
 
 .link-text:hover { color: var(--accent); text-decoration: underline; }
 
-/* Toggle ativo/inativo */
-.toggle-btn {
+/**
+ * Status vira só rótulo: ativar/desativar saiu do backend — um LinkFixo só
+ * existe com link de afiliado, e nasce ativo.
+ */
+.status-estatico {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
   border-radius: 20px;
-  border: none;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.toggle-btn.ativo {
-  background: var(--green-dim);
-  color: var(--green);
-  border: 1px solid rgba(0, 230, 118, 0.25);
-}
-
-.toggle-btn.ativo:hover:not(:disabled) {
-  background: rgba(255, 71, 87, 0.1);
-  color: var(--red);
-  border-color: rgba(255, 71, 87, 0.25);
-}
-
-.toggle-btn.inativo-btn {
   background: var(--red-dim);
   color: var(--red);
   border: 1px solid rgba(255, 71, 87, 0.25);
 }
 
-.toggle-btn.inativo-btn:hover:not(:disabled) {
+.status-estatico.ativo {
   background: var(--green-dim);
   color: var(--green);
   border-color: rgba(0, 230, 118, 0.25);
 }
 
-.toggle-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.card-acoes .status-estatico { padding: 3px 8px; font-size: 10px; }
 
 .status-dot {
   width: 6px;
@@ -1280,3 +1236,62 @@ td { padding: 11px 14px; vertical-align: middle; }
   background: var(--red);
   color: var(--bg-primary);
 }
+
+/* ─── Link compartilhado (par link curto + URL da aba) ───────────────────── */
+
+.compartilhar-linha { align-items: center; }
+
+.compartilhar-toggle {
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+
+.compartilhar-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+.compartilhar-toggle.ativa {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.compartilhar-dica {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.compartilhar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  animation: preview-entrada 180ms ease;
+}
+
+.compartilhar-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.compartilhar-msg {
+  font-size: 12px;
+  color: var(--green);
+  line-height: 1.4;
+}
+
+.compartilhar-msg.erro { color: var(--red); }

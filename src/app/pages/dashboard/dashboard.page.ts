@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HealthCardComponent } from '../../components/health-card/health-card.component';
-import { BuscarCategoriasBtnComponent } from '../../components/buscar-categorias-btn/buscar-categorias-btn.component';
+import { FiltrosCapturaComponent } from '../../components/filtros-captura/filtros-captura.component';
 import { AliexpressBtnComponent } from '../../components/aliexpress-btn/aliexpress-btn.component';
 import { MercadoLivreBtnComponent } from '../../components/mercadolivre-btn/mercadolivre-btn.component';
 import { ProdutosTableComponent } from '../../components/produtos-table/produtos-table.component';
@@ -10,6 +10,8 @@ import { LinksFixosComponent } from '../../components/links-fixos/links-fixos.co
 import { WhatsappCardComponent } from '../../components/whatsapp-card/whatsapp-card.component';
 import { MlAuthCardComponent } from '../../components/ml-auth-card/ml-auth-card.component';
 import { MlDiagnosticoComponent } from '../../components/ml-diagnostico/ml-diagnostico.component';
+import { OpenaiDiagnosticoComponent } from '../../components/openai-diagnostico/openai-diagnostico.component';
+import { WorkerCardComponent } from '../../components/worker-card/worker-card.component';
 import { BotApiService } from '../../services/bot-api.service';
 
 @Component({
@@ -18,7 +20,7 @@ import { BotApiService } from '../../services/bot-api.service';
   imports: [
     CommonModule,
     HealthCardComponent,
-    BuscarCategoriasBtnComponent,
+    FiltrosCapturaComponent,
     AliexpressBtnComponent,
     MercadoLivreBtnComponent,
     ProdutosTableComponent,
@@ -26,6 +28,8 @@ import { BotApiService } from '../../services/bot-api.service';
     WhatsappCardComponent,
     MlAuthCardComponent,
     MlDiagnosticoComponent,
+    OpenaiDiagnosticoComponent,
+    WorkerCardComponent,
     ConfigModalComponent
   ],
   templateUrl: './dashboard.page.html',

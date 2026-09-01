@@ -9,16 +9,28 @@
       </span>
     </div>
 
-    <button
-      class="exec-btn"
-      [ngClass]="estado"
-      (click)="executar()"
-      [disabled]="estado === 'loading'">
-      <span *ngIf="estado !== 'loading'" class="btn-content">▶ TESTAR</span>
-      <span *ngIf="estado === 'loading'" class="btn-content">
-        <span class="spinner"></span> TESTANDO...
-      </span>
-    </button>
+    <div class="header-acoes">
+      <!-- Opcional: sem isto o backend sonda um anúncio dos destaques -->
+      <input
+        class="item-input mono"
+        type="text"
+        [(ngModel)]="item"
+        name="item"
+        placeholder="MLB… (opcional)"
+        title="Anúncio específico a investigar em GET /items/{id}"
+        (keyup.enter)="executar()" />
+
+      <button
+        class="exec-btn"
+        [ngClass]="estado"
+        (click)="executar()"
+        [disabled]="estado === 'loading'">
+        <span *ngIf="estado !== 'loading'" class="btn-content">▶ TESTAR</span>
+        <span *ngIf="estado === 'loading'" class="btn-content">
+          <span class="spinner"></span> TESTANDO...
+        </span>
+      </button>
+    </div>
   </div>
 
   <p class="diag-intro" *ngIf="!resultado && estado !== 'loading'">
@@ -55,10 +67,40 @@
     <ng-container *ngFor="let t of testes; trackBy: trackByNome">
       <div class="diag-detalhe-box" *ngIf="estaExpandido(t.nome)">
         <div class="diag-para-que">{{ t.paraQueServe }}</div>
+
+        <!-- Só o teste 'item' traz isto: é o conteúdo que vira a mensagem -->
+        <div class="item-campos" *ngIf="t.nome === 'item' && t.titulo">
+          <div class="item-campo">
+            <span class="item-label">Título</span>
+            <span class="item-valor">{{ t.titulo }}</span>
+          </div>
+          <div class="item-campo">
+            <span class="item-label">Preço</span>
+            <span class="item-valor mono" [class.ruim]="!t.preco">
+              {{ t.preco ? (t.preco | currency:'BRL') : 'ausente' }}
+            </span>
+          </div>
+          <div class="item-campo">
+            <span class="item-label">Foto</span>
+            <span class="item-valor" [class.ruim]="!t.temFoto">{{ t.temFoto ? 'sim' : 'não' }}</span>
+          </div>
+          <div class="item-campo" *ngIf="t.statusDoAnuncio">
+            <span class="item-label">Anúncio</span>
+            <span class="item-valor mono">{{ t.statusDoAnuncio }}</span>
+          </div>
+        </div>
         <div class="diag-causa" *ngIf="t.causaProvavel">⚠ {{ t.causaProvavel }}</div>
         <pre class="diag-resposta mono" *ngIf="t.resposta || t.amostra">{{ t.resposta || t.amostra }}</pre>
       </div>
     </ng-container>
+
+    <!-- A falha que explica a promoção publicada sem foto e sem preço -->
+    <div class="diag-item-falhou" *ngIf="itemFalhou">
+      <strong>O ML não entregou os dados do anúncio em /items.</strong>
+      É por isso que uma promoção sairia sem foto e sem preço. Desde a última
+      mudança o bot recusa esses anúncios em vez de publicar a mensagem pelada —
+      então o efeito visível é oferta que não sai, não oferta feia.
+    </div>
 
     <!-- Bloqueio por política merece destaque: não é problema do usuário -->
     <div class="diag-politica" *ngIf="bloqueadoPorPolitica">

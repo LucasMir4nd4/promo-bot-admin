@@ -1,0 +1,49 @@
+<div class="worker-card fade-in">
+
+  <div class="card-header">
+    <div class="card-title">
+      <span class="icon">🤖</span>
+      <span>Worker de automação</span>
+      <span class="modo-badge mono" *ngIf="estado?.modo">{{ estado?.modo }}</span>
+    </div>
+
+    <button
+      class="chave-btn"
+      [ngClass]="estado?.ativo ? 'ligado' : 'desligado'"
+      (click)="alternar()"
+      [disabled]="alternando || carregando || !estado">
+      {{ rotuloBotao }}
+    </button>
+  </div>
+
+  <div class="worker-erro" *ngIf="erro">⚠ {{ erro }}</div>
+
+  <ng-container *ngIf="estado">
+    <div class="linha-estado">
+      <span class="ponto" [ngClass]="classeSituacao"></span>
+      <span class="situacao" [ngClass]="classeSituacao">{{ situacao }}</span>
+      <span class="sinal mono">último sinal {{ ultimoSinal }}</span>
+      <span class="fila mono" *ngIf="estado.naFila">{{ estado.naFila }} na fila</span>
+    </div>
+
+    <p class="explicacao">{{ estado.explicacao }}</p>
+
+    <!-- O caso mais comum de OFFLINE é simplesmente não ter iniciado o Python,
+         então o comando fica à mão em vez de virar consulta ao README. -->
+    <div class="como-iniciar" *ngIf="!estado.online">
+      <div class="como-titulo">Para colocar no ar, nesta ordem:</div>
+      <ol>
+        <li><code class="mono">automation\chrome-afiliado.bat</code> — abre o Chrome de afiliado</li>
+        <li>confirme que a janela está logada como afiliado</li>
+        <li><code class="mono">python automation\gerador_afiliado.py</code></li>
+      </ol>
+    </div>
+  </ng-container>
+
+  <div class="worker-aviso" *ngIf="aviso">{{ aviso }}</div>
+
+  <div class="card-footer">
+    <span class="mono">A chave não inicia nem encerra o processo — ela manda o worker parar de gerar link.</span>
+    <span class="auto-badge">AUTO 10s</span>
+  </div>
+</div>

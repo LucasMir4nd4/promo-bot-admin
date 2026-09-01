@@ -154,3 +154,50 @@
 .diag-politica { background: var(--orange-dim); color: var(--orange); }
 .diag-conta { background: var(--bg-secondary); color: var(--text-secondary); }
 .diag-conclusao { background: var(--accent-dim); color: var(--accent); font-weight: 500; }
+
+/* ── Sonda de um anúncio específico (?item=MLB…) ─────────────────────────── */
+
+.header-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.item-input {
+  width: 150px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 11px;
+}
+.item-input:focus { outline: none; border-color: var(--accent); }
+.item-input::placeholder { color: var(--text-secondary); }
+
+/* Os três campos que viram a mensagem publicada, no detalhe do teste 'item' */
+.item-campos {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  margin-bottom: 8px;
+}
+
+.item-campo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.item-label { font-size: 10px; letter-spacing: 0.06em; color: var(--text-secondary); }
+.item-valor { font-size: 11px; color: var(--text-primary); overflow-wrap: anywhere; }
+.item-valor.ruim { color: var(--red); font-weight: 700; }
+
+.diag-item-falhou {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--red-dim);
+  color: var(--red);
+  font-size: 12px;
+  line-height: 1.5;
+}

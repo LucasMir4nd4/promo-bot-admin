@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BotApiService, DiagnosticoMl, TesteDiagnostico } from '../../services/bot-api.service';
 
 type Estado = 'idle' | 'loading' | 'success' | 'error';
@@ -15,7 +16,7 @@ type Estado = 'idle' | 'loading' | 'success' | 'error';
 @Component({
   selector: 'app-ml-diagnostico',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './ml-diagnostico.component.html',
   styleUrls: ['./ml-diagnostico.component.css']
 })
@@ -24,6 +25,14 @@ export class MlDiagnosticoComponent {
   estado: Estado = 'idle';
   resultado: DiagnosticoMl | null = null;
   erro: string | null = null;
+
+  /**
+   * Anúncio a investigar (MLB…), opcional. Vazio, o backend sonda o primeiro
+   * dos destaques — a mesma fonte da captura automática. Preenchido, o teste
+   * 'item' aponta para o anúncio da promoção que saiu sem foto e sem preço,
+   * que é como se descobre se o problema é daquele anúncio ou da integração.
+   */
+  item = '';
 
   /** Endpoints com o detalhe da resposta aberto. */
   expandidos = new Set<string>();
@@ -37,7 +46,7 @@ export class MlDiagnosticoComponent {
     this.erro = null;
     this.resultado = null;
 
-    this.api.diagnosticarMl().subscribe({
+    this.api.diagnosticarMl(this.item).subscribe({
       next: (res) => {
         this.estado = 'success';
         this.resultado = res;
@@ -66,6 +75,22 @@ export class MlDiagnosticoComponent {
 
   get falhas(): number {
     return this.testes.filter(t => !t.ok).length;
+  }
+
+  /**
+   * O teste de GET /items/{id}, quando o backend o inclui.
+   *
+   * Merece tratamento próprio: é o único teste cuja falha explica uma promoção
+   * publicada "pelada" — sem foto e sem preço — e esse sintoma não aponta para
+   * o ML de forma nenhuma (no log ele aparece como "Novo produto: null").
+   */
+  get testeItem(): TesteDiagnostico | null {
+    return this.testes.find(t => t.nome === 'item') ?? null;
+  }
+
+  get itemFalhou(): boolean {
+    const t = this.testeItem;
+    return t != null && !t.ok;
   }
 
   /**

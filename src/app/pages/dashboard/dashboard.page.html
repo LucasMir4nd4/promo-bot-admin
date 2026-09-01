@@ -39,6 +39,13 @@
       <app-mercadolivre-btn class="card-col" />
     </div>
 
+    <!-- Worker de automação: o Python que gera os links de afiliado.
+         Vem logo abaixo do status do bot porque responde a mesma pergunta —
+         "a esteira está de pé?" — só que da outra metade dela. -->
+    <div class="full-row">
+      <app-worker-card />
+    </div>
+
     <!-- Linha AliExpress + OAuth do Mercado Livre -->
     <div class="top-row">
       <app-aliexpress-btn class="card-col" />
@@ -50,9 +57,17 @@
       <app-ml-diagnostico />
     </div>
 
-    <!-- Categorias do Mercado Livre (linha completa) -->
+    <!-- Diagnóstico da OpenAI: a copy das promoções (linha completa) -->
     <div class="full-row">
-      <app-buscar-categorias-btn />
+      <app-openai-diagnostico />
+    </div>
+
+    <!-- O que o bot busca: categorias das duas fontes + palavras-chave.
+         Substitui o antigo card "Categorias do Mercado Livre", que só listava
+         os IDs para copiar e colar no application.yml — agora a escolha é salva
+         no banco e o próximo ciclo já usa. -->
+    <div class="full-row">
+      <app-filtros-captura />
     </div>
 
     <!-- WhatsApp: conexão via QR Code (linha completa) -->

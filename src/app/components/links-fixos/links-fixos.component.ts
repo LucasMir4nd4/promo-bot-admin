@@ -1,12 +1,10 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable, catchError, forkJoin, map, of } from 'rxjs';
-import { BotApiService, LinkFixo, LinkPreview } from '../../services/bot-api.service';
+import { BotApiService, LinkFixo, LinkPreview, OfertaNaFila } from '../../services/bot-api.service';
 
-type EstadoExec = 'idle' | 'loading' | 'success' | 'error';
 type Visao = 'grade' | 'tabela';
-type AcaoLote = 'ativar' | 'desativar' | 'deletar';
+type AcaoLote = 'deletar';
 
 @Component({
   selector: 'app-links-fixos',
@@ -21,13 +19,17 @@ export class LinksFixosComponent implements OnInit {
   loading = true;
   erro = false;
 
-  estadoExec: EstadoExec = 'idle';
-  mensagemExec: string | null = null;
-
   pendingIds = new Set<number>();
 
-  // Rascunho do link de afiliado por item pendente (chave = id do link)
-  rascunhoAfiliado: Record<number, string> = {};
+  // ─── Fila de ofertas (memória do bot, ainda sem link de afiliado) ───────────
+
+  /** O que a captura por categoria enfileirou e ainda espera link de afiliado. */
+  fila: OfertaNaFila[] = [];
+
+  filaCarregando = false;
+
+  /** Fila indisponível (backend antigo ou offline) — some a seção em vez de mentir. */
+  filaIndisponivel = false;
 
   /** Quadros (estilo hub de afiliados) ou tabela — a escolha fica salva entre visitas. */
   visao: Visao = (localStorage.getItem('links_visao') as Visao) || 'grade';
@@ -67,7 +69,11 @@ export class LinksFixosComponent implements OnInit {
   /** Uma análise em voo. Trava o botão e evita pedir duas vezes o mesmo texto. */
   analisando = false;
 
-  /** Link de afiliado opcional: preenchido aqui, o item já nasce ativo. */
+  /**
+   * Link de afiliado do cadastro manual. Obrigatório: o backend ainda aceita
+   * gravar sem ele, mas não existe mais endpoint para preencher depois — a
+   * linha ficaria inativa para sempre, sem como publicar.
+   */
   linkAfiliadoNovo = '';
 
   /** Adia a análise enquanto o usuário ainda está digitando/colando. */
@@ -76,10 +82,29 @@ export class LinksFixosComponent implements OnInit {
   /** Última entrada analisada, para não repetir a chamada à toa. */
   private ultimaEntradaAnalisada: string | null = null;
 
+  // ─── Link compartilhado (o par que vem do modal Compartilhar do ML) ─────────
+
+  /** O painel só aparece quando pedido: o caminho de todo dia é a busca acima. */
+  compartilharAberto = false;
+
+  /** Link curto (meli.la/…) copiado do modal Compartilhar. */
+  compLinkAfiliado = '';
+
+  /** URL da aba do produto — é dela que o backend tira o MLB. */
+  compPaginaProduto = '';
+
+  /** Ligado, a promoção sai na hora; desligado, o item só fica ativo pro ciclo. */
+  compPublicar = true;
+
+  compEnviando = false;
+  compMensagem: string | null = null;
+  compComErro = false;
+
   constructor(private api: BotApiService) {}
 
   ngOnInit(): void {
     this.carregar();
+    this.carregarFila();
   }
 
   carregar(): void {
@@ -95,47 +120,41 @@ export class LinksFixosComponent implements OnInit {
     });
   }
 
-  /** Item pendente = capturado pelo bot, ainda sem link de afiliado preenchido. */
-  isPendente(link: LinkFixo): boolean {
-    return !link.linkAfiliado || link.linkAfiliado.trim().length === 0;
-  }
+  /**
+   * GET /api/links/fila.txt — as ofertas capturadas que ainda não viraram link.
+   *
+   * A fila mora na memória do bot, não no banco: ela não aparece em
+   * listarLinks(), e um restart do backend a esvazia. Por isso é uma seção à
+   * parte, e não linhas "pendentes" misturadas na lista.
+   */
+  carregarFila(): void {
+    if (this.filaCarregando) return;
+    this.filaCarregando = true;
 
-  /** Preenche o link de afiliado de um pendente (o backend já o ativa). */
-  definirAfiliado(link: LinkFixo): void {
-    if (link.id == null || this.pendingIds.has(link.id)) return;
-    const valor = (this.rascunhoAfiliado[link.id] ?? '').trim();
-    if (!valor) return;
-
-    this.pendingIds.add(link.id);
-    this.api.definirAfiliado(link.id, valor).subscribe({
-      next: (atualizado) => {
-        const idx = this.links.findIndex(l => l.id === atualizado.id);
-        if (idx !== -1) this.links[idx] = atualizado;
-        delete this.rascunhoAfiliado[link.id!];
-        this.pendingIds.delete(link.id!);
+    this.api.listarFila().subscribe({
+      next: (ofertas) => {
+        this.fila = ofertas;
+        this.filaCarregando = false;
+        this.filaIndisponivel = false;
       },
-      error: () => this.pendingIds.delete(link.id!)
+      error: () => {
+        this.fila = [];
+        this.filaCarregando = false;
+        this.filaIndisponivel = true;
+      }
     });
   }
 
-  toggleAtivo(link: LinkFixo): void {
-    if (link.id == null || this.pendingIds.has(link.id)) return;
-    // Sem link de afiliado não dá pra ativar (o backend recusaria).
-    if (!link.ativo && this.isPendente(link)) return;
-    this.pendingIds.add(link.id);
-
-    const op = link.ativo
-      ? this.api.desativarLink(link.id)
-      : this.api.ativarLink(link.id);
-
-    op.subscribe({
-      next: (atualizado) => {
-        const idx = this.links.findIndex(l => l.id === atualizado.id);
-        if (idx !== -1) this.links[idx] = atualizado;
-        this.pendingIds.delete(link.id!);
-      },
-      error: () => this.pendingIds.delete(link.id!)
-    });
+  /**
+   * Manda a oferta da fila para o painel "Compartilhar": é o caminho manual do
+   * mesmo fluxo do worker — abrir o anúncio, copiar o link do Compartilhar e
+   * colar aqui, com a URL da página já preenchida.
+   */
+  usarOferta(oferta: OfertaNaFila): void {
+    this.compartilharAberto = true;
+    this.compPaginaProduto = oferta.urlProduto;
+    this.compMensagem = null;
+    this.compComErro = false;
   }
 
   deletar(link: LinkFixo): void {
@@ -148,25 +167,6 @@ export class LinksFixosComponent implements OnInit {
         this.pendingIds.delete(link.id!);
       },
       error: () => this.pendingIds.delete(link.id!)
-    });
-  }
-
-  executarLinksFixos(): void {
-    if (this.estadoExec === 'loading') return;
-    this.estadoExec = 'loading';
-    this.mensagemExec = null;
-
-    this.api.executarLinksFixos().subscribe({
-      next: (res) => {
-        this.estadoExec = 'success';
-        this.mensagemExec = res.mensagem || res.message || 'Links fixos executados!';
-        setTimeout(() => { this.estadoExec = 'idle'; this.mensagemExec = null; }, 5000);
-      },
-      error: () => {
-        this.estadoExec = 'error';
-        this.mensagemExec = 'Falha ao executar links fixos.';
-        setTimeout(() => { this.estadoExec = 'idle'; this.mensagemExec = null; }, 5000);
-      }
     });
   }
 
@@ -246,14 +246,20 @@ export class LinksFixosComponent implements OnInit {
     });
   }
 
+  /** O cadastro manual só fecha com o link de afiliado junto — ver linkAfiliadoNovo. */
+  get podeCadastrar(): boolean {
+    return !!this.preview?.utilizavel && this.linkAfiliadoNovo.trim().length > 0;
+  }
+
   /** Grava o item que está no card de preview. */
   confirmarCadastro(): void {
-    if (!this.preview?.utilizavel || this.adicionando) return;
+    const preview = this.preview;
+    if (!preview || !this.podeCadastrar || this.adicionando) return;
 
     this.adicionando = true;
     this.erroAdicionar = null;
 
-    this.api.adicionarLink(this.preview.entrada, this.linkAfiliadoNovo).subscribe({
+    this.api.adicionarLink(preview.entrada, this.linkAfiliadoNovo).subscribe({
       next: (novo) => {
         this.adicionando = false;
         if (novo?.id != null) this.links = [novo, ...this.links];
@@ -305,6 +311,96 @@ export class LinksFixosComponent implements OnInit {
       default:
         return `Falha ao falar com o bot (erro ${status ?? 'desconhecido'}).`;
     }
+  }
+
+  // ─── Link compartilhado ────────────────────────────────────────────────────
+
+  /**
+   * Abre/fecha o painel. Ao abrir, aproveita o que já está na busca como URL do
+   * produto — o fluxo real é colar a URL, ver o preview e só então perceber que
+   * o que se quer é publicar com o link de afiliado na mão.
+   */
+  alternarCompartilhar(): void {
+    this.compartilharAberto = !this.compartilharAberto;
+    this.compMensagem = null;
+    this.compComErro = false;
+
+    if (this.compartilharAberto && !this.compPaginaProduto && this.pareceLinkMl) {
+      this.compPaginaProduto = this.busca.trim();
+    }
+  }
+
+  /** Os dois campos são obrigatórios; nenhum dos dois identifica o anúncio sozinho. */
+  get compPronto(): boolean {
+    return this.compLinkAfiliado.trim().length > 0 && this.compPaginaProduto.trim().length > 0;
+  }
+
+  /** POST /api/links/compartilhado — grava o par e (por padrão) publica na hora. */
+  registrarCompartilhado(): void {
+    if (this.compEnviando) return;
+    if (!this.compPronto) {
+      this.compComErro = true;
+      this.compMensagem = 'Preencha o link de afiliado e a URL da página do produto.';
+      return;
+    }
+
+    this.compEnviando = true;
+    this.compMensagem = null;
+    this.compComErro = false;
+
+    this.api.registrarCompartilhado(this.compLinkAfiliado, this.compPaginaProduto, this.compPublicar)
+      .subscribe({
+        next: (res) => {
+          this.compEnviando = false;
+          this.compComErro = false;
+          this.compMensagem = res.mensagem
+            || (res.publicado ? 'Promoção enviada.' : 'Link gravado e item ativado.');
+
+          // Campos limpos para o próximo par; o painel fica aberto porque este
+          // fluxo costuma vir em sequência, um anúncio atrás do outro.
+          this.compLinkAfiliado = '';
+          this.compPaginaProduto = '';
+          this.carregar();
+          // O anúncio sai da fila assim que o link existe — recarregar mantém a
+          // seção de ofertas coerente com o que o backend ainda tem em memória.
+          this.carregarFila();
+          setTimeout(() => { this.compMensagem = null; }, 8000);
+        },
+        error: (e) => {
+          this.compEnviando = false;
+          this.compComErro = true;
+          this.compMensagem = this.mensagemErroCompartilhado(e);
+        }
+      });
+  }
+
+  /**
+   * O backend responde 400/409 com 'erro', 'motivo' e às vezes 'comoResolver' —
+   * mostrar os três é o que separa "deu erro" de "o link era de catálogo".
+   */
+  private mensagemErroCompartilhado(e: any): string {
+    if (e?.status === 404 || e?.status === 405) {
+      return 'Esta versão do backend não tem o registro por compartilhamento (POST /api/links/compartilhado).';
+    }
+
+    const corpo = e?.error;
+
+    // 422 SEM_DADOS_DO_PRODUTO: o link de afiliado estava certo — quem não
+    // entregou foi o Mercado Livre, que devolveu o anúncio sem foto ou sem
+    // preço. O bot recusa em vez de gravar um item ativo e impublicável para
+    // sempre (o ciclo que um dia o repescaria não existe mais). Vale dizer isso
+    // com todas as letras: sem essa frase, "não deu certo" mandaria você tentar
+    // de novo, e repetir não muda nada — o que falta está do lado do ML.
+    if (e?.status === 422) {
+      return [
+        corpo?.erro ?? 'O Mercado Livre não devolveu os dados deste anúncio.',
+        'Gerar o link de novo não resolve. Use o card de diagnóstico do ML com esse'
+        + ' MLB para ver o que faltou (título, preço ou foto).'
+      ].join(' ');
+    }
+
+    if (corpo?.erro) return [corpo.erro, corpo.comoResolver].filter(Boolean).join(' ');
+    return this.mensagemErroRede(e?.status);
   }
 
   // ─── Seleção múltipla ──────────────────────────────────────────────────────
@@ -362,32 +458,6 @@ export class LinksFixosComponent implements OnInit {
     return visiveis.length > 0 && visiveis.every(id => this.selecionados.has(id));
   }
 
-  ativarSelecionados(): void {
-    // Pendente não pode ser ativado (sem link de afiliado o backend recusa) e
-    // quem já está ativo não precisa de chamada.
-    const ids = this.linksSelecionados()
-      .filter(l => !this.isPendente(l) && !l.ativo)
-      .map(l => l.id!);
-
-    if (!ids.length) {
-      this.avisarLote('Nenhum dos selecionados pode ser ativado (pendentes precisam do link de afiliado).');
-      return;
-    }
-    this.aplicarLote(ids, 'ativar');
-  }
-
-  desativarSelecionados(): void {
-    const ids = this.linksSelecionados()
-      .filter(l => !this.isPendente(l) && l.ativo)
-      .map(l => l.id!);
-
-    if (!ids.length) {
-      this.avisarLote('Nenhum dos selecionados está ativo.');
-      return;
-    }
-    this.aplicarLote(ids, 'desativar');
-  }
-
   deletarSelecionados(): void {
     const ids = this.linksSelecionados().map(l => l.id!);
     if (!ids.length) return;
@@ -397,7 +467,7 @@ export class LinksFixosComponent implements OnInit {
       : `Remover os ${ids.length} links selecionados?`;
     if (!confirm(confirmacao)) return;
 
-    this.aplicarLote(ids, 'deletar');
+    this.apagarEmLote(ids);
   }
 
   private linksSelecionados(): LinkFixo[] {
@@ -464,54 +534,6 @@ export class LinksFixosComponent implements OnInit {
         this.avisarLote('Falha ao limpar a lista.');
       }
     });
-  }
-
-  /**
-   * Ativar/desativar continuam item a item — o backend não tem endpoint de lote
-   * para eles, e cada falha é isolada para que os que deram certo já apareçam.
-   */
-  private aplicarLote(ids: number[], acao: AcaoLote): void {
-    if (acao === 'deletar') { this.apagarEmLote(ids); return; }
-    if (this.acaoLote) return;
-
-    this.acaoLote = acao;
-    this.mensagemLote = null;
-    this.loteComErro = false;
-    ids.forEach(id => this.pendingIds.add(id));
-
-    const chamar = (id: number): Observable<any> => {
-      if (acao === 'ativar') return this.api.ativarLink(id);
-      return this.api.desativarLink(id);
-    };
-
-    forkJoin(
-      ids.map(id => chamar(id).pipe(
-        map(resposta => ({ id, ok: true, resposta })),
-        catchError(() => of({ id, ok: false, resposta: null as any }))
-      ))
-    ).subscribe(resultados => {
-      const sucessos = resultados.filter(r => r.ok);
-      const falhas = resultados.length - sucessos.length;
-
-      for (const r of sucessos) {
-        const idx = this.links.findIndex(l => l.id === r.id);
-        if (idx !== -1 && r.resposta) this.links[idx] = r.resposta as LinkFixo;
-      }
-
-      ids.forEach(id => this.pendingIds.delete(id));
-      sucessos.forEach(r => this.selecionados.delete(r.id));
-      this.acaoLote = null;
-      this.loteComErro = falhas > 0;
-      this.mensagemLote = this.resumoLote(acao, sucessos.length, falhas);
-      setTimeout(() => { this.mensagemLote = null; this.loteComErro = false; }, 5000);
-    });
-  }
-
-  private resumoLote(acao: AcaoLote, ok: number, falhas: number): string {
-    const verbo = acao === 'ativar' ? 'ativado' : acao === 'desativar' ? 'desativado' : 'removido';
-    const plural = ok === 1 ? '' : 's';
-    const base = `${ok} link${plural} ${verbo}${plural}.`;
-    return falhas > 0 ? `${base} ${falhas} falhou/falharam.` : base;
   }
 
   private avisarLote(mensagem: string): void {

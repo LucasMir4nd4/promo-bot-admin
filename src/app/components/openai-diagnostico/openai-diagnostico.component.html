@@ -1,0 +1,86 @@
+<div class="diag-card fade-in">
+
+  <div class="card-header">
+    <div class="card-title">
+      <span class="icon">🧠</span>
+      <span>Diagnóstico OpenAI</span>
+      <span class="count-badge" *ngIf="resultado && testes.length">
+        {{ testes.length - falhas }}/{{ testes.length }} ok
+      </span>
+    </div>
+
+    <button
+      class="exec-btn"
+      [ngClass]="estado"
+      (click)="executar()"
+      [disabled]="estado === 'loading'">
+      <span *ngIf="estado !== 'loading'" class="btn-content">▶ TESTAR</span>
+      <span *ngIf="estado === 'loading'" class="btn-content">
+        <span class="spinner"></span> TESTANDO...
+      </span>
+    </button>
+  </div>
+
+  <p class="diag-intro" *ngIf="!resultado && estado !== 'loading'">
+    Confere chave, modelo e gera uma copy de verdade pelo mesmo caminho da
+    publicação. Vale rodar quando as promoções saírem com texto genérico: o bot
+    cai num texto padrão sem avisar, então o Telegram não denuncia nada.
+    <br><small>A chamada real gasta alguns tokens.</small>
+  </p>
+
+  <div class="diag-erro" *ngIf="erro">⚠ {{ erro }}</div>
+
+  <ng-container *ngIf="resultado">
+
+    <!-- Perfil mock: o diagnóstico pode estar verde e a OpenAI nem ser chamada -->
+    <div class="diag-mock" *ngIf="emModoMock">
+      <strong>Perfil “mock” ativo.</strong> {{ resultado.configuracao.clienteEmUso }}
+    </div>
+
+    <div class="diag-cfg">
+      <div class="cfg-item">
+        <span class="cfg-label">Chave</span>
+        <span class="cfg-valor mono" [class.ruim]="semChave">
+          {{ resultado.configuracao.chave }}
+        </span>
+      </div>
+      <div class="cfg-item">
+        <span class="cfg-label">Modelo</span>
+        <span class="cfg-valor mono">{{ resultado.configuracao.modelo }}</span>
+      </div>
+      <div class="cfg-item" *ngIf="resultado.configuracao.perfisAtivos?.length">
+        <span class="cfg-label">Perfis</span>
+        <span class="cfg-valor mono">{{ resultado.configuracao.perfisAtivos.join(', ') }}</span>
+      </div>
+    </div>
+
+    <!-- Uma linha por teste; clique abre a resposta crua -->
+    <div
+      class="diag-linha clicavel"
+      *ngFor="let t of testes; trackBy: trackByNome"
+      [class.falhou]="!t.ok"
+      (click)="alternarDetalhe(t.nome)">
+      <span class="diag-status">{{ t.ok ? '✓' : '✗' }}</span>
+      <span class="diag-nome">{{ t.nome }}</span>
+      <span class="diag-endpoint mono">{{ t.endpoint }}</span>
+      <span class="diag-tokens mono" *ngIf="t.tokensUsados">{{ t.tokensUsados }} tok</span>
+      <span class="diag-http mono" [class.ruim]="!t.ok">{{ t.status }}</span>
+    </div>
+
+    <ng-container *ngFor="let t of testes; trackBy: trackByNome">
+      <div class="diag-detalhe-box" *ngIf="estaExpandido(t.nome)">
+        <div class="diag-para-que">{{ t.paraQueServe }}</div>
+        <div class="diag-modelo mono" *ngIf="t.modeloQueRespondeu">
+          respondeu como: {{ t.modeloQueRespondeu }}
+        </div>
+        <div class="diag-causa" *ngIf="t.causaProvavel">⚠ {{ t.causaProvavel }}</div>
+        <pre class="diag-resposta mono" *ngIf="t.resposta || t.amostra">{{ t.resposta || t.amostra }}</pre>
+      </div>
+    </ng-container>
+
+    <!-- O que acontece com as promoções enquanto isto estiver quebrado -->
+    <div class="diag-impacto" *ngIf="resultado.impacto">{{ resultado.impacto }}</div>
+
+    <div class="diag-conclusao">{{ resultado.conclusao }}</div>
+  </ng-container>
+</div>
